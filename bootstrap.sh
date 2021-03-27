@@ -19,8 +19,8 @@ which docker-compose > /dev/null
 which curl > /dev/null || which wget > /dev/null
 [ $? -eq 0 ] || error "Please install curl or wget."
 
-# is netcat installed
-which netcat > /dev/null
+# is nc installed
+which nc > /dev/null
 [ $? -eq 0 ] || error "Please install netcat."
 
 # Cleanup git repository
@@ -121,25 +121,25 @@ DB_PORT=3306
 
 while true
 do
-    netcat -tz -w 1 localhost ${HTTP_PORT} 2> /dev/null
+    nc -tz -w 1 localhost ${HTTP_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
     HTTP_PORT=$(expr ${HTTP_PORT} + 1)
 done
 while true
 do
-    netcat -tz -w 1 localhost ${MH_PORT} 2> /dev/null
+    nc -tz -w 1 localhost ${MH_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
     MH_PORT=$(expr ${MH_PORT} + 1)
 done
 while true
 do
-    netcat -tz -w 1 localhost ${MINIO_PORT} 2> /dev/null
+    nc -tz -w 1 localhost ${MINIO_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
     MINIO_PORT=$(expr ${MINIO_PORT} + 1)
 done
 while true
 do
-    netcat -tz -w 1 localhost ${DB_PORT} 2> /dev/null
+    nc -tz -w 1 localhost ${DB_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
     DB_PORT=$(expr ${DB_PORT} + 1)
 done
