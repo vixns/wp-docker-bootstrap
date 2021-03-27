@@ -184,6 +184,7 @@ echo "MINIO_PORT=${MINIO_PORT}" >> .env
 echo "S3_UPLOADS_BUCKET_URL=http://localhost:${MINIO_PORT}/wordpress" >> .env
 echo "HTTP_PORT=${HTTP_PORT}" >> .env
 echo "SENTRY_DSN=" >> .env
+echo "VERSION=dev" >> .env
 echo "S3_ENDPOINT=http://minio:${MINIO_PORT}" >> .env
 echo "S3_UPLOADS_KEY=minioadmin" >> .env
 echo "S3_UPLOADS_SECRET=minioadmin" >> .env
@@ -262,6 +263,9 @@ define( 'S3_UPLOADS_SECRET', getenv('S3_UPLOADS_SECRET') );
 define( 'S3_UPLOADS_BUCKET', getenv('S3_UPLOADS_BUCKET') );
 define( 'S3_UPLOADS_REGION', getenv('S3_UPLOADS_REGION') );
 define( 'S3_UPLOADS_BUCKET_URL', getenv('S3_UPLOADS_BUCKET_URL')  );
+define( 'WP_SENTRY_PHP_DSN', getenv('SENTRY_DSN'));
+define( 'WP_SENTRY_BROWSER_DSN', getenv('SENTRY_DSN'));
+define( 'WP_SENTRY_VERSION', getenv('VERSION') );
 define( 'WP_DEBUG', false );
 define('DISALLOW_FILE_MODS',true);
 define( 'WP_SITEURL', getenv('WP_URL') );
