@@ -181,7 +181,7 @@ echo "SMTP_HOST=mh" >> .env
 echo "SMTP_PORT=1025" >> .env
 echo "MH_PORT=${MH_PORT}" >> .env
 echo "MINIO_PORT=${MINIO_PORT}" >> .env
-echo "S3_UPLOADS_BUCKET_URL=http://localhost:${MINIO_PORT}/wordpress" >> .env
+echo "S3_UPLOADS_URL=http://localhost:${MINIO_PORT}" >> .env
 echo "HTTP_PORT=${HTTP_PORT}" >> .env
 echo "SENTRY_DSN=" >> .env
 echo "VERSION=dev" >> .env
@@ -262,7 +262,7 @@ define( 'S3_UPLOADS_KEY', getenv('S3_UPLOADS_KEY') );
 define( 'S3_UPLOADS_SECRET', getenv('S3_UPLOADS_SECRET') );
 define( 'S3_UPLOADS_BUCKET', getenv('S3_UPLOADS_BUCKET') );
 define( 'S3_UPLOADS_REGION', getenv('S3_UPLOADS_REGION') );
-define( 'S3_UPLOADS_BUCKET_URL', getenv('S3_UPLOADS_BUCKET_URL')  );
+define( 'S3_UPLOADS_BUCKET_URL', getenv('S3_UPLOADS_URL') . '/' . getenv('S3_UPLOADS_BUCKET')  );
 define( 'WP_SENTRY_PHP_DSN', getenv('SENTRY_DSN'));
 define( 'WP_SENTRY_BROWSER_DSN', getenv('SENTRY_DSN'));
 define( 'WP_SENTRY_VERSION', getenv('VERSION') );
@@ -394,6 +394,10 @@ docker:
         secret:
           name: s3
           key: region
+      S3_UPLOADS_URL:
+        secret:
+          name: s3
+          key: url
       WP_URL: "https://${PROD_FQDN}"
     volumes:
       - path: /wordpress/wp-content/uploads
