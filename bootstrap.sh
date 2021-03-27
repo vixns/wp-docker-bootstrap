@@ -78,7 +78,7 @@ case $WP_LANG in
         done
         while [ $(echo -n "$PREPROD_FQDN" | wc -c) -lt 2 ]
         do
-            read -p "Nom d'hotede pre-production: " PREPROD_FQDN
+            read -p "Nom d'hote de pre-production: " PREPROD_FQDN
         done
         while [ $(echo -n "$PREPROD_USER" | wc -c) -lt 2 ]
         do
