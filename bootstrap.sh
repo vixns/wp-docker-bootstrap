@@ -181,6 +181,7 @@ echo "SMTP_HOST=mh" >> .env
 echo "SMTP_PORT=1025" >> .env
 echo "MH_PORT=${MH_PORT}" >> .env
 echo "MINIO_PORT=${MINIO_PORT}" >> .env
+echo "S3_UPLOADS_BUCKET_URL=http://localhost:${MINIO_PORT}/wordpress" >> .env
 echo "HTTP_PORT=${HTTP_PORT}" >> .env
 echo "SENTRY_DSN=" >> .env
 echo "S3_ENDPOINT=http://minio:${MINIO_PORT}" >> .env
@@ -260,6 +261,7 @@ define( 'S3_UPLOADS_KEY', getenv('S3_UPLOADS_KEY') );
 define( 'S3_UPLOADS_SECRET', getenv('S3_UPLOADS_SECRET') );
 define( 'S3_UPLOADS_BUCKET', getenv('S3_UPLOADS_BUCKET') );
 define( 'S3_UPLOADS_REGION', getenv('S3_UPLOADS_REGION') );
+define( 'S3_UPLOADS_BUCKET_URL', getenv('S3_UPLOADS_BUCKET_URL')  );
 define( 'WP_DEBUG', false );
 define('DISALLOW_FILE_MODS',true);
 define( 'WP_SITEURL', getenv('WP_URL') );
@@ -308,6 +310,10 @@ minio/mc alias s minio http://minio:9000 minioadmin minioadmin
 docker run --rm -u $(id -u) -v $(pwd)/.mc:/.mc \
 --network $(pwd | awk -F'/' '{print $NF}')_default \
 minio/mc mb minio/wordpress
+
+docker run --rm -u $(id -u) -v $(pwd)/.mc:/.mc \
+--network $(pwd | awk -F'/' '{print $NF}')_default \
+minio/mc policy set download minio/wordpress/uploads
 
 echo "Activate s3-uploads"
 ./wp plugin activate s3-uploads
