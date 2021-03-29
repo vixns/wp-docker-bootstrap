@@ -307,17 +307,9 @@ echo "Install sentry"
 
 # Create minio bucket
 echo "Create minio bucket"
-docker run --rm -u $(id -u) -v $(pwd)/.mc:/.mc \
---network $(pwd | awk -F'/' '{print $NF}')_default \
-minio/mc alias s minio http://minio:9000 minioadmin minioadmin
-
-docker run --rm -u $(id -u) -v $(pwd)/.mc:/.mc \
---network $(pwd | awk -F'/' '{print $NF}')_default \
-minio/mc mb minio/wordpress
-
-docker run --rm -u $(id -u) -v $(pwd)/.mc:/.mc \
---network $(pwd | awk -F'/' '{print $NF}')_default \
-minio/mc policy set download minio/wordpress/uploads
+./scripts/mc alias s minio http://minio:9000 minioadmin minioadmin
+./scripts/mc mb minio/wordpress
+./scripts/mc policy set download minio/wordpress/uploads
 
 echo "Activate s3-uploads"
 ./wp plugin activate s3-uploads
