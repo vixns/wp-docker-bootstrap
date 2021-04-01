@@ -404,6 +404,8 @@ deploy:
       master: >-
         wp core update-db &&
         wp search-replace
+        --recurse-objects
+        --all-tables
         https://${PREPROD_FQDN}
         https://${PROD_FQDN}
     cpu: 0.01
