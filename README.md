@@ -6,7 +6,7 @@
 	cd myproject
 	./bootstrap.sh
 
-This script will ask some configuration configuration
+This script will ask some configuration options
 A few environment variables can be set to automate the process
 
 	`WP_LANG` the wordpress installation language, `en` and `fr` values are currently supported.
