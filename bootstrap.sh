@@ -181,6 +181,9 @@ echo "DB_PASSWORD=wppass" >> .env
 echo "WP_URL=http://localhost:${HTTP_PORT}" >> .env
 echo "SMTP_HOST=mh" >> .env
 echo "SMTP_PORT=1025" >> .env
+echo "SMTP_AUTH=false" >> .env
+echo "SMTP_USER=''" >> .env
+echo "SMTP_PASS=''" >> .env
 echo "MH_PORT=${MH_PORT}" >> .env
 echo "MINIO_PORT=${MINIO_PORT}" >> .env
 echo "S3_UPLOADS_URL=http://localhost:${MINIO_PORT}" >> .env
@@ -279,11 +282,11 @@ define( 'WP_AUTO_UPDATE_CORE', false );
 define( 'WPMS_ON', true );
 define( 'WPMS_MAIL_FROM', "${USER}@local.dev" );
 define( 'WPMS_MAILER', 'smtp' ); // Possible values: 'mail', 'smtpcom', 'sendinblue', 'mailgun', 'sendgrid', 'gmail', 'smtp'.
-define( 'WPMS_SET_RETURN_PATH', true ); // Sets $phpmailer->Sender if true, relevant only for Other SMTP mailer.
-define( 'WPMS_SMTP_HOST', 'mh' ); // The SMTP mail host.
-define( 'WPMS_SMTP_PORT', 1025 ); // The SMTP server port number.
-define( 'WPMS_SSL', '' ); // Possible values '', 'ssl', 'tls' - note TLS is not STARTTLS.
-define( 'WPMS_SMTP_AUTH', false ); // True turns it on, false turns it off.
+define( 'WPMS_SMTP_HOST', "$SMTP_HOST" );
+define( 'WPMS_SMTP_PORT', "$SMTP_PORT" ); 
+define( 'WPMS_SMTP_AUTH', "$SMTP_AUTH" ); 
+define( 'WPMS_SMTP_USER', "$SMTP_USER" ); 
+define( 'WPMS_SMTP_PASS', "$SMTP_PASS" );
 
 if ( ! defined( 'ABSPATH' ) )
   define( 'ABSPATH', dirname( __FILE__ ) . '/' );
@@ -380,6 +383,18 @@ docker:
         secret:
           name: smtp
           key: port
+      SMTP_AUTH:
+        secret:
+          name: smtp
+          key: auth
+      SMTP_USER:
+        secret:
+          name: smtp
+          key: user
+      SMTP_PASS:
+        secret:
+          name: smtp
+          key: pass
       VERSION: "%shortcommit%"
       SENTRY_DSN:
         secret:
