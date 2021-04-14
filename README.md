@@ -1,5 +1,7 @@
 # Wordpress docker bootstrap
 
+Setup a docker wordpress installation in minutes and get ready to work with Vixns Clusters. Instatallation scripts will automatically download latest wordpress release, create mysql user and datababase and generate configuration files. It includes a lemp stack (nginx+php-fpm), a mariadb server, a [mailhog](https://github.com/mailhog/MailHog) instance to manage outgoing emails, and a minio instance that will make your wordpress website "S3 ready". 
+
 ## Usage
 
 	git clone https://github.com/vixns/wp-docker-bootstrap myproject
