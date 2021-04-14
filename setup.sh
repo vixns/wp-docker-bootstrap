@@ -28,7 +28,7 @@ which nc > /dev/null
 if [ ! -e .develop ]
 then
     echo "cleanup.sh" >> .gitignore
-    echo "bootstrap.sh" >> .gitignore
+    echo "setup.sh" >> .gitignore
 fi
 
 rm -rf .git
@@ -519,4 +519,4 @@ esac
 echo
 echo "============================================================="
 
-[ -e .develop ] || rm -f cleanup.sh bootstrap.sh
+[ -e .develop ] || rm -f cleanup.sh setup.sh

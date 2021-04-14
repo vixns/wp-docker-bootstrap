@@ -6,7 +6,7 @@ Setup a docker wordpress installation in minutes and get ready to work with Vixn
 
 	git clone https://github.com/vixns/wp-docker-bootstrap myproject
 	cd myproject
-	./bootstrap.sh
+	./setup.sh
 
 This script will ask some configuration options
 A few environment variables can be set to automate the process
