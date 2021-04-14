@@ -418,15 +418,13 @@ deploy:
   - name: update
     user: www-data
     onetime: true
-    cmd: 
-      develop: wp core update-db
-      master: >-
-        wp core update-db &&
-        wp search-replace
-        --recurse-objects
-        --all-tables
-        https://${PREPROD_FQDN}
-        https://${PROD_FQDN}
+    cmd: >-
+      wp core update-db &&
+      wp search-replace
+      --recurse-objects
+      --all-tables
+      $(wp option get siteurl)
+      https://${PROD_FQDN}
     cpu: 0.01
     mem: 200
     docker:
