@@ -70,7 +70,8 @@ case $WP_LANG in
     "fr")
         while [ $(echo -n "$DOCKER_REGISTRY" | wc -c) -lt 2 ]
         do
-            read -p "Nom d'hote du registry docker: " DOCKER_REGISTRY
+            read -p "Nom d'hote du registry docker: (docker.vixns.net par defaut)" DOCKER_REGISTRY
+            DOCKER_REGISTRY="${DOCKER_REGISTRY:=docker.vixns.net}"
         done
         while [ $(echo -n "$PROD_FQDN" | wc -c) -lt 2 ]
         do
@@ -92,7 +93,8 @@ case $WP_LANG in
     *) 
         while [ $(echo -n "$DOCKER_REGISTRY" | wc -c) -lt 2 ]
         do
-            read -p "Docker registry FQDN: " DOCKER_REGISTRY
+            read -p "Docker registry FQDN: (default: docker.vixns.net) " DOCKER_REGISTRY
+            DOCKER_REGISTRY="${DOCKER_REGISTRY:=docker.vixns.net}"
         done
         while [ $(echo -n "$PROD_FQDN" | wc -c) -lt 2 ]
         do
@@ -273,6 +275,16 @@ define( 'WP_HOME', getenv('WP_URL') );
 define( 'WP_CACHE', true );
 define( 'AUTOMATIC_UPDATER_DISABLED', true );
 define( 'WP_AUTO_UPDATE_CORE', false );
+#wp mail smtp config
+define( 'WPMS_ON', true );
+define( 'WPMS_MAIL_FROM', "${USER}@local.dev" );
+define( 'WPMS_MAILER', 'smtp' ); // Possible values: 'mail', 'smtpcom', 'sendinblue', 'mailgun', 'sendgrid', 'gmail', 'smtp'.
+define( 'WPMS_SET_RETURN_PATH', true ); // Sets $phpmailer->Sender if true, relevant only for Other SMTP mailer.
+define( 'WPMS_SMTP_HOST', 'mh' ); // The SMTP mail host.
+define( 'WPMS_SMTP_PORT', 1025 ); // The SMTP server port number.
+define( 'WPMS_SSL', '' ); // Possible values '', 'ssl', 'tls' - note TLS is not STARTTLS.
+define( 'WPMS_SMTP_AUTH', false ); // True turns it on, false turns it off.
+
 if ( ! defined( 'ABSPATH' ) )
   define( 'ABSPATH', dirname( __FILE__ ) . '/' );
 require_once __DIR__ . '/wp-content/plugins/s3-uploads/vendor/autoload.php';
@@ -304,6 +316,13 @@ echo "Configure wordpress"
 
 echo "Install sentry"
 ./wp plugin install wp-sentry-integration
+
+echo "Install Wordpress mail smtp"
+./wp plugin install wp-mail-smtp
+
+echo "Activate wp mail smtp"
+./wp plugin activate wp-mail-smtp
+
 
 # Create minio bucket
 echo "Create minio bucket"
