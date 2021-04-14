@@ -280,13 +280,12 @@ define( 'AUTOMATIC_UPDATER_DISABLED', true );
 define( 'WP_AUTO_UPDATE_CORE', false );
 #wp mail smtp config
 define( 'WPMS_ON', true );
-define( 'WPMS_MAIL_FROM', "${USER}@local.dev" );
 define( 'WPMS_MAILER', 'smtp' ); // Possible values: 'mail', 'smtpcom', 'sendinblue', 'mailgun', 'sendgrid', 'gmail', 'smtp'.
-define( 'WPMS_SMTP_HOST', "$SMTP_HOST" );
-define( 'WPMS_SMTP_PORT', "$SMTP_PORT" ); 
-define( 'WPMS_SMTP_AUTH', "$SMTP_AUTH" ); 
-define( 'WPMS_SMTP_USER', "$SMTP_USER" ); 
-define( 'WPMS_SMTP_PASS', "$SMTP_PASS" );
+define( 'WPMS_SMTP_HOST', getenv('SMTP_HOST') );
+define( 'WPMS_SMTP_PORT', getenv('SMTP_PORT') ); 
+define( 'WPMS_SMTP_AUTH', getenv('SMTP_AUTH') ); 
+define( 'WPMS_SMTP_USER', getenv('SMTP_USER') ); 
+define( 'WPMS_SMTP_PASS', getenv('SMTP_PASS') );
 
 if ( ! defined( 'ABSPATH' ) )
   define( 'ABSPATH', dirname( __FILE__ ) . '/' );
