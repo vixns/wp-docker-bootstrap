@@ -23,8 +23,8 @@ A few environment variables can be set to automate the process
 	git remote add origin [Your repository url]
 
 
-The "develop" branch will deploy a "staging" environnement.  
-The "master" branch will deploy the prodduction environnement.
+The "develop" branch will deploy the "staging" environnement.  
+The "master" branch will deploy the "production" environnement.
 
 
 ## Create and switch to "develop" branch
