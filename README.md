@@ -24,7 +24,6 @@ A few environment variables can be set to automate the process
 
 
 The "develop" branch will deploy a "staging" environnement.
-
 The "master" branch will deploy the prodduction environnement.
 
 
