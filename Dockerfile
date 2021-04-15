@@ -18,6 +18,3 @@ COPY config/nginx /etc/nginx/conf.d
 COPY --chown=www-data:www-data wordpress /wordpress
 ENV HOME=/tmp
 USER www-data
-RUN git clone https://github.com/humanmade/S3-Uploads.git \
-/wordpress/wp-content/plugins/s3-uploads \
-&& cd /wordpress/wp-content/plugins/s3-uploads && composer install
