@@ -33,6 +33,31 @@ fi
 
 rm -rf .git
 git init -q
+cat > .git/hooks/pre-commit << EOF
+#!/bin/sh
+exec 1>&2
+git diff-index --check --cached $against --
+which curl > /dev/null
+if [ $? -eq 0 ]
+then
+curlf() {
+  OUTPUT_FILE=\$(mktemp)
+  HTTP_CODE=\$(curl --silent --output \$OUTPUT_FILE --write-out "%{http_code}" "\$@")
+  if [ "\${HTTP_CODE}" != "200" ] ; then
+    >&2 cat \$OUTPUT_FILE
+    rm \$OUTPUT_FILE
+    exit 22
+  fi
+  cat \$OUTPUT_FILE
+  rm \$OUTPUT_FILE
+}
+curlf https://deploy.vixns.net/check/syntax --data-binary @.ci.yml
+else
+wget -q -o - https://deploy.vixns.net/check/syntax --post-file .ci.yml
+fi
+
+EOF
+chmod +x .git/hooks/pre-commit
 git add .
 git commit -m "Initial Import" 2>&1 >/dev/null
 
