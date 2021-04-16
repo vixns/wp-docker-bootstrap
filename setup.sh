@@ -44,14 +44,6 @@ git add .
 git commit -m "Initial Import" 2>&1 >/dev/null
 cat > .git/hooks/pre-commit << EOF
 #!/bin/sh
-if git rev-parse --verify HEAD >/dev/null 2>&1
-then
-  against=HEAD
-else
-  # Initial commit: diff against an empty tree object
-  against=$(git hash-object -t tree /dev/null)
-fi
-git diff-index --check --cached \$against --
 which curl > /dev/null
 if [ \$? -eq 0 ]
 then
