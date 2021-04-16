@@ -353,7 +353,7 @@ docker-compose run --rm \
 -w /wordpress/wp-content/plugins/s3-uploads \
 app -- /usr/local/bin/composer install -q
 
-rm -rf wordpress/wp-content/plugins/s3-uploads/.git
+rm -rf wordpress/wp-content/plugins/s3-uploads/.git wordpress/wp-content/plugins/s3-uploads/.gitignore
 
 echo "Configure wordpress"
 ./wp core install \
@@ -374,6 +374,9 @@ echo "Install Wordpress mail smtp"
 
 echo "Activate wp mail smtp"
 ./wp plugin activate wp-mail-smtp
+
+echo "Activate s3-uploads"
+./wp plugin activate s3-uploads
 
 
 # Create minio bucket

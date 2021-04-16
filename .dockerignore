@@ -1,4 +1,2 @@
 Dockerfile
-wordpress/wp-content/plugins/S3-uploads
-wordpress/wp-content/plugins/s3-uploads/vendor
 .develop
