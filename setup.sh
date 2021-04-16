@@ -90,7 +90,7 @@ case $WP_LANG in
                     INSTALLER_URL=https://fr.wordpress.org/latest-fr_FR.tar.gz
                 break
                     ;;
-                *) echo "invalid option $REPLY";;
+                *) echo "invalid option $REPLY, use 1 or 2";;
             esac
         done
     ;;
@@ -220,7 +220,7 @@ echo "S3_UPLOADS_URL=http://localhost:${MINIO_PORT}" >> .env
 echo "HTTP_PORT=${HTTP_PORT}" >> .env
 echo "SENTRY_DSN=" >> .env
 echo "VERSION=dev" >> .env
-echo "S3_ENDPOINT=http://minio:${MINIO_PORT}" >> .env
+echo "S3_ENDPOINT=http://minio:9000" >> .env
 echo "S3_UPLOADS_KEY=minioadmin" >> .env
 echo "S3_UPLOADS_SECRET=minioadmin" >> .env
 echo "S3_UPLOADS_BUCKET=wordpress" >> .env
@@ -348,6 +348,9 @@ echo "Configure wordpress"
 
 echo "Install sentry"
 ./wp plugin install wp-sentry-integration
+
+echo "Activate sentry"
+./wp plugin activate wp-sentry-integration
 
 echo "Install Wordpress mail smtp"
 ./wp plugin install wp-mail-smtp
