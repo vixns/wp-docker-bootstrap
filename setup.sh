@@ -29,6 +29,12 @@ if [ ! -e .develop ]
 then
     echo "cleanup.sh" >> .gitignore
     echo "setup.sh" >> .gitignore
+    cat > cleanup.sh << EOF
+#!/bin/sh
+[ -e docker-compose.yml ] && docker-compose down -v
+rm -rf .mc s3 wordpress docker-compose.yml .vixns-ci.yml Jenkinsfile
+EOF
+  chmod +x cleanup.sh
 fi
 
 rm -rf .git
@@ -551,4 +557,4 @@ esac
 echo
 echo "============================================================="
 
-[ -e .develop ] || rm -f cleanup.sh setup.sh
+[ -e .develop ] || rm -f setup.sh
