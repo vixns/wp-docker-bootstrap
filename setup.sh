@@ -57,9 +57,9 @@ curlf() {
   cat \$OUTPUT_FILE
   rm \$OUTPUT_FILE
 }
-curlf https://deploy.vixns.net/check/syntax --data-binary @.ci.yml
+curlf https://deploy.vixns.net/verify --data-binary @.ci.yml
 else
-wget -q -o - https://deploy.vixns.net/check/syntax --post-file .ci.yml
+wget -q -o - https://deploy.vixns.net/verify --post-file .ci.yml
 fi
 
 EOF
