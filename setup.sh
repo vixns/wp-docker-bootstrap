@@ -147,6 +147,7 @@ esac
 
 
 HTTP_PORT=8080
+PMA_PORT=8008
 MH_PORT=8025
 MINIO_PORT=9000
 DB_PORT=3306
@@ -156,6 +157,12 @@ do
     nc -tz -w 1 localhost ${HTTP_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
     HTTP_PORT=$(expr ${HTTP_PORT} + 1)
+done
+while true
+do
+    nc -tz -w 1 localhost ${PMA_PORT} 2> /dev/null
+    [ "$?" -eq "1" ] && break
+    PMAPORT=$(expr ${PMA_PORT} + 1)
 done
 while true
 do
@@ -240,6 +247,16 @@ services:
       - MYSQL_DATABASE=\${DB_NAME}
       - MYSQL_USER=\${DB_USER}
       - MYSQL_PASSWORD=\${DB_PASSWORD}
+  pma:
+    image: phpmyadmin
+    ports:
+      - "\${PMA_PORT:-8008}:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=notaseriouspass
+      - PHP_UPLOAD_MAX_FILESIZE=1G
+      - PHP_MAX_INPUT_VARS=1G
   mh:
     image: mailhog/mailhog
     ports:
@@ -540,6 +557,7 @@ case $WP_LANG in
     echo "Mot de passe minio: minioadmin"
     echo
     echo "Mysql port: ${DB_PORT}"
+    echo "phpMyAdmin: http://localhost:${PMA_PORT}"
     ;;
     *) 
     echo "Wordpress successfully installed."
@@ -554,6 +572,7 @@ case $WP_LANG in
     echo "Minio password: minioadmin"
     echo
     echo "Mysql port: ${DB_PORT}"
+    echo "phpMyAdmin: http://localhost:${PMA_PORT}"
     ;;
 esac
 echo
