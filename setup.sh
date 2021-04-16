@@ -39,7 +39,7 @@ EOF
 fi
 
 rm -rf .git
-git init -q
+git init -q -b develop
 git add .
 git commit -m "Initial Import" 2>&1 >/dev/null
 cat > .git/hooks/pre-commit << EOF
