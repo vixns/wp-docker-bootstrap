@@ -327,6 +327,7 @@ define( 'AUTOMATIC_UPDATER_DISABLED', true );
 define( 'WP_AUTO_UPDATE_CORE', false );
 #wp mail smtp config
 define( 'WPMS_ON', true );
+define( 'WPMS_SET_RETURN_PATH', true );
 define( 'WPMS_MAILER', 'smtp' ); // Possible values: 'mail', 'smtpcom', 'sendinblue', 'mailgun', 'sendgrid', 'gmail', 'smtp'.
 define( 'WPMS_SMTP_HOST', getenv('SMTP_HOST') );
 define( 'WPMS_SMTP_PORT', getenv('SMTP_PORT') ); 
