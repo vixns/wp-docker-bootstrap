@@ -29,6 +29,7 @@ if [ ! -e .develop ]
 then
     echo "cleanup.sh" >> .gitignore
     echo "setup.sh" >> .gitignore
+else
     cat > cleanup.sh << EOF
 #!/bin/sh
 [ -e docker-compose.yml ] && docker-compose down -v
