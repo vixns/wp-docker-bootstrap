@@ -39,12 +39,14 @@ fi
 
 rm -rf .git
 git init -q
+git add .
+git commit -m "Initial Import" 2>&1 >/dev/null
 cat > .git/hooks/pre-commit << EOF
 #!/bin/sh
 exec 1>&2
-git diff-index --check --cached $against --
+git diff-index --check --cached \$against --
 which curl > /dev/null
-if [ $? -eq 0 ]
+if [ \$? -eq 0 ]
 then
 curlf() {
   OUTPUT_FILE=\$(mktemp)
@@ -64,8 +66,6 @@ fi
 
 EOF
 chmod +x .git/hooks/pre-commit
-git add .
-git commit -m "Initial Import" 2>&1 >/dev/null
 
 # Let's Roll
 
