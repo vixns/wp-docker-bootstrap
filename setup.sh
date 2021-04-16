@@ -43,7 +43,13 @@ git add .
 git commit -m "Initial Import" 2>&1 >/dev/null
 cat > .git/hooks/pre-commit << EOF
 #!/bin/sh
-exec 1>&2
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+  against=HEAD
+else
+  # Initial commit: diff against an empty tree object
+  against=$(git hash-object -t tree /dev/null)
+fi
 git diff-index --check --cached \$against --
 which curl > /dev/null
 if [ \$? -eq 0 ]
@@ -59,9 +65,9 @@ curlf() {
   cat \$OUTPUT_FILE
   rm \$OUTPUT_FILE
 }
-curlf https://deploy.vixns.net/verify --data-binary @.ci.yml
+curlf https://deploy.vixns.net/verify --data-binary @.vixns-ci.yml
 else
-wget -q -o - https://deploy.vixns.net/verify --post-file .ci.yml
+wget -q -o - https://deploy.vixns.net/verify --post-file .vixns-ci.yml
 fi
 
 EOF
@@ -101,7 +107,7 @@ case $WP_LANG in
     "fr")
         while [ $(echo -n "$DOCKER_REGISTRY" | wc -c) -lt 2 ]
         do
-            read -p "Nom d'hote du registry docker: (docker.vixns.net par defaut)" DOCKER_REGISTRY
+            read -p "Nom d'hote du registry docker: (docker.vixns.net par defaut) " DOCKER_REGISTRY
             DOCKER_REGISTRY="${DOCKER_REGISTRY:=docker.vixns.net}"
         done
         while [ $(echo -n "$PROD_FQDN" | wc -c) -lt 2 ]
