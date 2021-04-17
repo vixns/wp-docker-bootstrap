@@ -12,9 +12,10 @@ RUN apt-get update \
 && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
 && chmod 755 /usr/local/bin/wp /usr/local/bin/composer \
 && usermod -u ${UID:-33} www-data \
-&& chown -R www-data:www-data /etc/service /var/log/nginx /var/lib/nginx
+&& chown -R www-data:www-data /etc/service /var/log/nginx /var/lib/nginx /etc/nginx/conf.d
 COPY config/php /usr/local/etc/php-fpm.d
-COPY config/nginx /etc/nginx/conf.d
+COPY config/nginx/nginx.conf /etc/service/nginx/nginx.conf
+COPY config/nginx/nginx-run.sh /etc/service/nginx/run
 COPY --chown=www-data:www-data wordpress /wordpress
 ENV HOME=/tmp
 USER www-data
