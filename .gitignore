@@ -1,5 +1,5 @@
-.env
-.mc
-s3
-wordpress/wp-content/uploads
-.develop
+/.env
+/.mc
+/s3
+/wordpress/wp-content/uploads
+/.develop

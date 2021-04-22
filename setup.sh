@@ -283,8 +283,40 @@ services:
     env_file: ./.env
     volumes:
       - "./wordpress:/wordpress:cached"
-      - "./config/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:cached"
       - "./config/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:cached"
+EOF
+
+# create dproxy compatible compose file
+echo "Create dproxy compatible compose file"
+cat > docker-compose-dproxy.yml << EOF
+version: '3'
+services:
+  minio:
+    image: minio/minio
+    command: server /data
+    user: \${UID}
+    volumes:
+      - ./s3:/data
+    ports:
+      - "9000"
+    labels:
+      - "traefik.frontend.rule=Host:minio-\${HOSTNAME}.\${DOMAIN}"
+  app:
+    depends_on:
+      - minio
+    build:
+      context: .
+      args:
+        UID: \${UID}
+    ports:
+      - "8080"
+    env_file: ./.env
+    volumes:
+      - "./wordpress:/wordpress:cached"
+      - "./config/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:cached"
+    labels:
+      - "traefik.frontend.rule=Host:\${HOSTNAME}.\${DOMAIN}"
+
 EOF
 
 #create wp-config.php
