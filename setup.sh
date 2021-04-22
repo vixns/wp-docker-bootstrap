@@ -297,6 +297,9 @@ services:
     user: \${UID}
     volumes:
       - ./s3:/data
+    networks:
+      - default
+      - proxy
     ports:
       - "9000"
     labels:
@@ -308,6 +311,11 @@ services:
       context: .
       args:
         UID: \${UID}
+    networks:
+      - default
+      - proxy
+      - smtp
+      - mysql
     ports:
       - "8080"
     env_file: ./.env
@@ -316,6 +324,18 @@ services:
       - "./config/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:cached"
     labels:
       - "traefik.frontend.rule=Host:\${HOSTNAME}.\${DOMAIN}"
+
+networks:
+  default:
+  mysql:
+    external:
+      name: mysql
+  proxy:
+    external:
+      name: proxy
+  smtp:
+    external:
+      name: smtp
 
 EOF
 
