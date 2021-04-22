@@ -428,10 +428,6 @@ echo "Install Wordpress mail smtp"
 echo "Activate wp mail smtp"
 ./wp plugin activate wp-mail-smtp
 
-echo "Activate s3-uploads"
-./wp plugin activate s3-uploads
-
-
 # Create minio bucket
 echo "Create minio bucket"
 ./scripts/mc alias s minio http://minio:9000 minioadmin minioadmin
