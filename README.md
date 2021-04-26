@@ -27,12 +27,6 @@ The "develop" branch will deploy the "staging" environnement.
 The "master" branch will deploy the "production" environnement.
 
 
-## Create and switch to "develop" branch
-	
-	git checkout -b develop
-
-now, you're ready to work
-
 ## Core update
 	
 	./wp core update
