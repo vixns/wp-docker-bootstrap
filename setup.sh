@@ -162,7 +162,7 @@ while true
 do
     nc -tz -w 1 localhost ${PMA_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
-    PMAPORT=$(expr ${PMA_PORT} + 1)
+    PMA_PORT=$(expr ${PMA_PORT} + 1)
 done
 while true
 do
