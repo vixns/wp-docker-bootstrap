@@ -27,12 +27,14 @@ The "develop" branch will deploy the "staging" environnement.
 The "master" branch will deploy the "production" environnement.
 
 
-## Core update
+## Common Wordpress operations
+ 
+### Core update
 	
 	./wp core update
 	./wp core update-db
 
-## Plugins
+### Plugins
 
 #### Plugins update
 
@@ -55,27 +57,29 @@ The "master" branch will deploy the "production" environnement.
 	./wp plugin install disable-user-gravatar --activate
 
 
-## Themes
+### Themes
 
-### Themes update
+#### Themes update
 
 	./wp theme update --all
 
-### Search for a theme
+#### Search for a theme
 
 	./wp theme search [some text]
 
-#### Example
+##### Example
 
 	./wp theme search material
 
-### Install and activate a theme
+#### Install and activate a theme
 
 	./wp theme install [name] --activate
 
-#### Example
+##### Example
 
 	./wp theme install material --activate
+
+[Read more](https://developer.wordpress.org/cli/commands/) about WP-CLI 
 
 ## Database operations
 
