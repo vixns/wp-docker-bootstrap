@@ -215,6 +215,7 @@ echo "DB_PORT=${DB_PORT}" >> .env
 echo "DB_NAME=wp" >> .env
 echo "DB_USER=wpuser" >> .env
 echo "DB_PASSWORD=wppass" >> .env
+echo "PMA_PORT=${PMA_PORT}" >> .env
 echo "WP_URL=http://localhost:${HTTP_PORT}" >> .env
 echo "SMTP_HOST=mh" >> .env
 echo "SMTP_PORT=1025" >> .env
