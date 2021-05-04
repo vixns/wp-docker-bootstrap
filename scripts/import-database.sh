@@ -12,8 +12,8 @@ then
 		echo "usage: $0 dump.sql.gz"
 		exit 1
 	fi
-	gunzip -c $1 | docker-compose exec -T db sh -c "mysql -uroot -p\${MYSQL_ROOT_PASSWORD} \${MYSQL_DATABASE}"
+	gunzip -c $1 | docker compose exec -T db sh -c "mysql -uroot -p\${MYSQL_ROOT_PASSWORD} \${MYSQL_DATABASE}"
 else
-	cat | docker-compose exec -T db sh -c "mysql -uroot -p\${MYSQL_ROOT_PASSWORD} \${MYSQL_DATABASE}"
+	cat | docker compose exec -T db sh -c "mysql -uroot -p\${MYSQL_ROOT_PASSWORD} \${MYSQL_DATABASE}"
 fi
 cd $CUR_DIR

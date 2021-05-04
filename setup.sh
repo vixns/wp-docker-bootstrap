@@ -11,10 +11,6 @@ error () {
 which docker > /dev/null
 [ $? -eq 0 ] || error "Please install docker first, see https://www.docker.com/products/docker-desktop"
 
-# is docker-compose installed
-which docker-compose > /dev/null
-[ $? -eq 0 ] || error "Please install docker-compose, see https://docs.docker.com/compose/install/"
-
 # is curl or wget installed
 which curl > /dev/null || which wget > /dev/null
 [ $? -eq 0 ] || error "Please install curl or wget."
@@ -32,7 +28,7 @@ then
 else
     cat > cleanup.sh << EOF
 #!/bin/sh
-[ -e docker-compose.yml ] && docker-compose down -v
+[ -e docker-compose.yml ] && docker compose down -v
 rm -rf .mc s3 wordpress docker-compose.yml .vixns-ci.yml Jenkinsfile
 EOF
   chmod +x cleanup.sh
@@ -396,13 +392,13 @@ EOF
 
 echo "Starting wordpress"
 mkdir -p s3 .mc
-docker-compose up -d --force-recreate
+docker compose up -d --force-recreate
 echo "Wait 5 sec for database initialisation"
 sleep 5
 
 echo "Install s3 uploads"
 git clone --quiet https://github.com/humanmade/S3-Uploads.git wordpress/wp-content/plugins/s3-uploads
-docker-compose run --rm \
+docker compose run --rm \
 -v $(pwd)/wordpress:/wordpress \
 -w /wordpress/wp-content/plugins/s3-uploads \
 app -- /usr/local/bin/composer install -q
