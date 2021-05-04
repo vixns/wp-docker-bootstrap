@@ -584,7 +584,8 @@ deploy:
             domains:
             - "${PROD_FQDN}"
 EOF
-
+mv step2/install.sh install.sh
+mv step2/README.md README.md
 echo "Commit base install"
 git add .
 git commit -m "Wordpress installed" 2>&1 >/dev/null
