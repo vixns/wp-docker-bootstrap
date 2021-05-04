@@ -21,12 +21,10 @@ A few environment variables can be set to automate the process
 ## Link to a git repository
 
 	git remote add origin [Your repository url]
+## Share your code
+To achieve your first push, you need to set upstream. Afterwards, a simple `git push` will do the job.
 
-
-The "develop" branch will deploy the "staging" environnement.  
-The "master" branch will deploy the "production" environnement.
-
-
+	git push --set-upstream origin develop	
 ## Common Wordpress operations
  
 ### Core update
@@ -165,7 +163,7 @@ Mirror your local store to staging
 
 	./scripts/mc mirror minio/wordpress/ staging/[bucket]/
 
-Push your git branch
+Push your git "develop" branch to deploy the "staging" environnement ("master" branch is reserved for "production" environnement)
 
 	git push
 
