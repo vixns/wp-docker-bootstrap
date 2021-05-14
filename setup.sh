@@ -388,9 +388,9 @@ define( 'WPMS_ON', true );
 define( 'WPMS_SET_RETURN_PATH', true );
 define( 'WPMS_MAILER', 'smtp' ); // Possible values: 'mail', 'smtpcom', 'sendinblue', 'mailgun', 'sendgrid', 'gmail', 'smtp'.
 define( 'WPMS_SMTP_HOST', getenv('SMTP_HOST') );
-define( 'WPMS_SMTP_PORT', getenv('SMTP_PORT') ); 
-define( 'WPMS_SMTP_AUTH', getenv('SMTP_AUTH') ); 
-define( 'WPMS_SMTP_USER', getenv('SMTP_USER') ); 
+define( 'WPMS_SMTP_PORT', getenv('SMTP_PORT') );
+define( 'WPMS_SMTP_AUTH', getenv('SMTP_AUTH') === 'true') );
+define( 'WPMS_SMTP_USER', getenv('SMTP_USER') );
 define( 'WPMS_SMTP_PASS', getenv('SMTP_PASS') );
 
 if ( ! defined( 'ABSPATH' ) )
