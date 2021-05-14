@@ -16,6 +16,8 @@ RUN apt-get update \
 COPY config/php /usr/local/etc/php-fpm.d
 COPY config/nginx/nginx.conf /etc/service/nginx/nginx.conf
 COPY config/nginx/nginx-run.sh /etc/service/nginx/run
+COPY proxysql-run.sh /etc/service/proxysql/run
+COPY update.sh /update.sh
 COPY --chown=www-data:www-data wordpress /wordpress
 ENV HOME=/tmp
 USER www-data
