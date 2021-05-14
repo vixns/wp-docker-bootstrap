@@ -3,3 +3,6 @@
 /s3
 /wordpress/wp-content/uploads
 /.develop
+/wordpress/wp-content/cache
+/wordpress/core
+*.swp
