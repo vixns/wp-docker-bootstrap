@@ -435,6 +435,19 @@ echo "Create minio bucket"
 echo "Activate s3-uploads"
 ./wp plugin activate s3-uploads
 
+echo "create update script"
+cat > update.sh << EOF
+#!/bin/sh
+if [ -e "/etc/proxysql/proxysql.cnf.tpl"  ]
+then
+  /etc/service/proxysql/run &
+  wait 3
+fi
+wp core update-db
+wp search-replace --recurse-objects --all-tables \$(wp option get siteurl) \${WP_URL}
+EOF
+chmod 755 update.sh
+
 echo "Create Vixns Continuous Deployment configuration"
 cat > Jenkinsfile << EOF
 properties([gitLabConnection('Gitlab')])
@@ -532,21 +545,7 @@ deploy:
   - name: update
     user: www-data
     onetime: true
-    cmd: 
-      develop: >-
-        wp core update-db &&
-        wp search-replace
-        --recurse-objects
-        --all-tables
-        \$(wp option get siteurl)
-        https://${PREPROD_FQDN}
-      master: >-
-        wp core update-db &&
-        wp search-replace
-        --recurse-objects
-        --all-tables
-        \$(wp option get siteurl)
-        https://${PROD_FQDN}
+    cmd: /update.sh
     cpu: 0.01
     mem: 200
     docker:
