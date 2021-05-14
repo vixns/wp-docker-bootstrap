@@ -13,6 +13,7 @@ A few environment variables can be set to automate the process
 
 	`WP_LANG` the wordpress installation language, `en` and `fr` values are currently supported.
 	`DOCKER_REGISTRY` the docker private registry FQDN, eg `docker.vixns.net`
+	`MYSQL_MARATHON_PATH` the mysql cluster path, eg `mysql-master-common-test.marathon.vx`
 	`PROD_FQDN` the production FQDN, eg `www.mywordpress.com`
 	`PREPROD_FQDN` the staging FQDN, eg `staging.mywordpress.com`
 	`PREPROD_USER` the staging http basic auth user

@@ -100,6 +100,10 @@ case $WP_LANG in
             read -p "Nom d'hote du registry docker: (docker.vixns.net par defaut) " DOCKER_REGISTRY
             DOCKER_REGISTRY="${DOCKER_REGISTRY:=docker.vixns.net}"
         done
+        while [ $(echo -n "$MYSQL_MARATHON_PATH" | wc -c) -lt 2 ]
+        do
+            read -p "Chemin du cluster mysql (exemple: mysql-master-common-test.marathon.vx): " MYSQL_MARATHON_PATH
+        done
         while [ $(echo -n "$PROD_FQDN" | wc -c) -lt 2 ]
         do
             read -p "Nom d'hote de production: " PROD_FQDN
@@ -122,6 +126,10 @@ case $WP_LANG in
         do
             read -p "Docker registry FQDN: (default: docker.vixns.net) " DOCKER_REGISTRY
             DOCKER_REGISTRY="${DOCKER_REGISTRY:=docker.vixns.net}"
+        done
+        while [ $(echo -n "$MYSQL_MARATHON_PATH" | wc -c) -lt 2 ]
+        do
+            read -p "Mysql cluster path (eg: mysql-master-common-test.marathon.vx): " MYSQL_MARATHON_PATH
         done
         while [ $(echo -n "$PROD_FQDN" | wc -c) -lt 2 ]
         do
@@ -569,6 +577,15 @@ docker:
           name: s3
           key: url
       WP_URL: "https://${PROD_FQDN}"
+      MYSQL1: node1-${MYSQL_MARATHON_PATH}
+      MYSQL2: node2-${MYSQL_MARATHON_PATH}
+      MYSQL3: node3-${MYSQL_MARATHON_PATH}
+    volumes:
+      - path: /etc/proxysql/proxysql.cnf.tpl
+        type: secret
+        secret:
+          name: proxysql
+          key: config
 deploy:
   - name: update
     user: www-data
