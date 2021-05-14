@@ -459,6 +459,38 @@ node {
 }
 EOF
 
+echo "set proxysql service"
+echo > /etc/service/proxysql/run << EOF
+#!/bin/sh
+
+exec 2>&1
+if [ ! -e "/etc/proxysql/proxysql.cnf.tpl" ]; then
+  touch down
+  sv down .
+  exit 0
+fi
+mkdir -p /tmp/proxysql
+
+cp /etc/proxysql/proxysql.cnf.tpl /etc/service/proxysql/proxysql.cnf
+
+a=\$(ping -c 1 \$MYSQL1 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+b=\$(ping -c 1 \$MYSQL2 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+c=\$(ping -c 1 \$MYSQL3 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+
+if [ \$a -lt \$b -a \$a -lt \$c ]
+then
+  sed -e "s/\${MYSQL1}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+elif [ \$b -lt \$c -a \$b -lt \$a ]
+then
+  sed -e "s/\${MYSQL2}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+else
+  sed -e "s/\${MYSQL3}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+fi
+
+exec proxysql -c /etc/service/proxysql/proxysql.cnf -D /tmp/proxysql -f -e
+EOF
+chmod 755 /etc/service/proxysql/run
+
 cat > .vixns-ci.yml << EOF
 version: 1
 
