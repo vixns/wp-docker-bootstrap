@@ -374,7 +374,7 @@ define( 'S3_UPLOADS_BUCKET', getenv('S3_UPLOADS_BUCKET') );
 define( 'S3_UPLOADS_REGION', getenv('S3_UPLOADS_REGION') );
 define( 'S3_UPLOADS_BUCKET_URL', getenv('S3_UPLOADS_URL') . '/' . getenv('S3_UPLOADS_BUCKET')  );
 define( 'WP_SENTRY_PHP_DSN', getenv('SENTRY_DSN'));
-define( 'WP_SENTRY_BROWSER_DSN', getenv('SENTRY_DSN'));
+//define( 'WP_SENTRY_BROWSER_DSN', getenv('SENTRY_DSN'));
 define( 'WP_SENTRY_VERSION', getenv('VERSION') );
 define( 'WP_DEBUG', false );
 define('DISALLOW_FILE_MODS',true);
