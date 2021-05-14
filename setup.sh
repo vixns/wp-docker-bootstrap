@@ -569,10 +569,6 @@ docker:
           name: s3
           key: url
       WP_URL: "https://${PROD_FQDN}"
-    volumes:
-      - path: /wordpress/wp-content/uploads
-        size: 10G
-        type: nas
 deploy:
   - name: update
     user: www-data
