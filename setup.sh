@@ -403,6 +403,62 @@ require_once __DIR__ . '/wp-content/plugins/s3-uploads/vendor/autoload.php';
 require_once( ABSPATH . 'wp-settings.php' );
 EOF
 
+echo "create update script"
+cat > update.sh << EOF
+#!/bin/sh
+if [ -e "/etc/proxysql/proxysql.cnf.tpl"  ]
+then
+  /etc/service/proxysql/run &
+  wait 3
+fi
+wp core update-db
+wp search-replace --recurse-objects --all-tables \$(wp option get siteurl) \${WP_URL}
+EOF
+chmod 755 update.sh
+
+echo "Create Vixns Continuous Deployment configuration"
+cat > Jenkinsfile << EOF
+properties([gitLabConnection('Gitlab')])
+node {
+  checkout scm
+  gitlabCommitStatus {
+    vixnsCi('.vixns-ci.yml');
+  }
+}
+EOF
+
+echo "set proxysql service"
+echo > proxysql-run.sh << EOF
+#!/bin/sh
+
+exec 2>&1
+if [ ! -e "/etc/proxysql/proxysql.cnf.tpl" ]; then
+  touch down
+  sv down .
+  exit 0
+fi
+mkdir -p /tmp/proxysql
+
+cp /etc/proxysql/proxysql.cnf.tpl /etc/service/proxysql/proxysql.cnf
+
+a=\$(ping -c 1 \$MYSQL1 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+b=\$(ping -c 1 \$MYSQL2 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+c=\$(ping -c 1 \$MYSQL3 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+
+if [ \$a -lt \$b -a \$a -lt \$c ]
+then
+  sed -e "s/\${MYSQL1}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+elif [ \$b -lt \$c -a \$b -lt \$a ]
+then
+  sed -e "s/\${MYSQL2}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+else
+  sed -e "s/\${MYSQL3}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
+fi
+
+exec proxysql -c /etc/service/proxysql/proxysql.cnf -D /tmp/proxysql -f -e
+EOF
+chmod 755 proxysql-run.sh
+
 echo "Starting wordpress"
 mkdir -p s3 .mc
 docker-compose up -d --force-recreate
@@ -446,62 +502,6 @@ echo "Create minio bucket"
 
 echo "Activate s3-uploads"
 ./wp plugin activate s3-uploads
-
-echo "create update script"
-cat > update.sh << EOF
-#!/bin/sh
-if [ -e "/etc/proxysql/proxysql.cnf.tpl"  ]
-then
-  /etc/service/proxysql/run &
-  wait 3
-fi
-wp core update-db
-wp search-replace --recurse-objects --all-tables \$(wp option get siteurl) \${WP_URL}
-EOF
-chmod 755 update.sh
-
-echo "Create Vixns Continuous Deployment configuration"
-cat > Jenkinsfile << EOF
-properties([gitLabConnection('Gitlab')])
-node {
-  checkout scm
-  gitlabCommitStatus {
-    vixnsCi('.vixns-ci.yml');
-  }
-}
-EOF
-
-echo "set proxysql service"
-echo > /etc/service/proxysql/run << EOF
-#!/bin/sh
-
-exec 2>&1
-if [ ! -e "/etc/proxysql/proxysql.cnf.tpl" ]; then
-  touch down
-  sv down .
-  exit 0
-fi
-mkdir -p /tmp/proxysql
-
-cp /etc/proxysql/proxysql.cnf.tpl /etc/service/proxysql/proxysql.cnf
-
-a=\$(ping -c 1 \$MYSQL1 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
-b=\$(ping -c 1 \$MYSQL2 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
-c=\$(ping -c 1 \$MYSQL3 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
-
-if [ \$a -lt \$b -a \$a -lt \$c ]
-then
-  sed -e "s/\${MYSQL1}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
-elif [ \$b -lt \$c -a \$b -lt \$a ]
-then
-  sed -e "s/\${MYSQL2}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
-else
-  sed -e "s/\${MYSQL3}.*weight=1/\000/g" -i /etc/service/proxysql/proxysql.cnf
-fi
-
-exec proxysql -c /etc/service/proxysql/proxysql.cnf -D /tmp/proxysql -f -e
-EOF
-chmod 755 /etc/service/proxysql/run
 
 cat > .vixns-ci.yml << EOF
 version: 1
@@ -678,3 +678,5 @@ echo
 echo "============================================================="
 
 [ -e .develop ] || rm -f setup.sh
+rm update.sh
+rm proxysql-run.sh
