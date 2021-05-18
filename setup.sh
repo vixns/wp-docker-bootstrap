@@ -29,8 +29,6 @@ if [ ! -e .develop ]
 then
     echo "cleanup.sh" >> .gitignore
     echo "setup.sh" >> .gitignore
-    echo "update.sh" >> .gitignore
-    echo "proxysql-run.sh" >> .gitignore
 else
     cat > cleanup.sh << EOF
 #!/bin/sh
@@ -638,8 +636,6 @@ EOF
 mv step2/install.sh install.sh
 mv step2/README.md README.md
 rm -r step2
-rm update.sh
-rm proxysql-run.sh
 
 echo "Commit base install"
 git add .
