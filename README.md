@@ -107,6 +107,7 @@ or
 First ask to the operation team a new S3 bucket, you'll need
 
 - An endpoint url
+- A bucket name
 - A key/secret pair
 
 Then run the following command :
