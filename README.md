@@ -4,12 +4,15 @@ Setup a docker wordpress installation in minutes and get ready to work with Vixn
 
 ## Usage
 
+Only alphanumeric characters must be used for project name.(ex. "myproject), do not use dot, hyphens, underscore etc ... 
+
 	git clone https://github.com/vixns/wp-docker-bootstrap myproject
 	cd myproject
 	./setup.sh
+	
 
 This script will ask some configuration options
-A few environment variables can be set to automate the process
+A few environment variables must be set to automate the proces.
 
 	`WP_LANG` the wordpress installation language, `en` and `fr` values are currently supported.
 	`DOCKER_REGISTRY` the docker private registry FQDN, eg `docker.vixns.net`
