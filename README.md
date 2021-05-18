@@ -112,11 +112,11 @@ First ask to the operation team a new S3 bucket, you'll need
 
 Then run the following command :
 
-	./scripts/mc alias set [name] [endpoint]/[bucket] [key] [secret]
+	./scripts/mc alias set [name] [endpoint] [key] [secret]
 
 ##### Example
 
-	./scripts/mc alias set remote_alias https://os.vixns.net:9000/mybucket mykey supersecret
+	./scripts/mc alias set remote_alias https://os.vixns.net:9000 mykey supersecret
 
 ### Mirror a bucket
 
