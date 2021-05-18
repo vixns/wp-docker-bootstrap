@@ -428,7 +428,7 @@ node {
 EOF
 
 echo "set proxysql service"
-echo > proxysql-run.sh << EOF
+cat > proxysql-run.sh << EOF
 #!/bin/sh
 
 exec 2>&1
