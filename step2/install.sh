@@ -41,21 +41,6 @@ which curl > /dev/null || which wget > /dev/null
 which nc > /dev/null
 [ $? -eq 0 ] || error "Please install netcat."
 
-# Cleanup git repository
-
-if [ ! -e .develop ]
-then
-    echo "cleanup.sh" >> .gitignore
-    echo "setup.sh" >> .gitignore
-else
-    cat > cleanup.sh << EOF
-#!/bin/sh
-[ -e docker-compose.yml ] && docker-compose down -v
-rm -rf .mc s3 wordpress docker-compose.yml .vixns-ci.yml Jenkinsfile
-EOF
-  chmod +x cleanup.sh
-fi
-
 cat > .git/hooks/pre-commit << EOF
 #!/bin/sh
 which curl > /dev/null
