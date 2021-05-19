@@ -50,7 +50,7 @@ then
 else
     cat > cleanup.sh << EOF
 #!/bin/sh
-[ -e docker compose.yml ] && docker compose down -v
+[ -e docker compose.yml ] && docker-compose down -v
 rm -rf .mc s3 wordpress docker compose.yml .vixns-ci.yml Jenkinsfile
 EOF
   chmod +x cleanup.sh
@@ -149,7 +149,7 @@ echo "S3_UPLOADS_REGION=eu-west-1" >> .env
 
 echo "Starting wordpress"
 mkdir -p s3 .mc
-docker compose up -d --force-recreate
+docker-compose up -d --force-recreate
 echo "Wait 5 sec for database initialisation"
 sleep 5
 
