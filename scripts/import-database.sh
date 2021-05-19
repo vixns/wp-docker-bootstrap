@@ -24,6 +24,6 @@ else
 fi
 
 OLDURL=$(echo 'SELECT option_value FROM wp_options WHERE option_name="siteurl"' | docker-compose exec -T app wp db query --skip-column-names)
-. ./.env
-./wp search-replace --recurse-objects --all-tables $OLDURL $WP_URL
+NEWURL=$(grep "WP_URL" ./.env )
+./wp search-replace --recurse-objects --all-tables $OLDURL $NEWURL
 cd $CUR_DIR
