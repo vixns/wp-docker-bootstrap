@@ -21,9 +21,9 @@ then
 	fi
 else
 	cat | docker-compose exec -T db sh -c "mysql -uroot -p\${MYSQL_ROOT_PASSWORD} \${MYSQL_DATABASE}"
-fi	
+fi
 
-OLDURL=$(sed 's/WP_URL=//g' <<< $(echo 'SELECT option_value FROM wp_options WHERE option_name="siteurl"' | docker-compose exec -T app wp db query --skip-column-names))
-NEWURL=$(sed 's/WP_URL=//g' <<< $(grep "WP_URL" ./.env ))
+OLDURL=$(echo 'SELECT option_value FROM wp_options WHERE option_name="siteurl"' | docker-compose exec -T app wp db query --skip-column-names)
+NEWURL=$(grep "WP_URL" ./.env )
 ./wp search-replace --recurse-objects --all-tables $OLDURL $NEWURL
 cd $CUR_DIR
