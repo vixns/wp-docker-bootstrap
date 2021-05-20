@@ -412,7 +412,8 @@ then
   wait 3
 fi
 wp core update-db
-wp search-replace --recurse-objects --all-tables \$(wp option get siteurl) \${WP_URL}
+OLDURL=\$(sed 's/WP_URL=//g' <<< \$(echo 'SELECT option_value FROM wp_options WHERE option_name="siteurl"' | docker-compose exec -T app wp db query --skip-column-names))
+wp search-replace --recurse-objects --all-tables \$OLDURL \${WP_URL}  
 EOF
 chmod 755 update.sh
 
