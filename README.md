@@ -130,16 +130,9 @@ Mirror local to remote
 
 	./script/mc mirror minio/wordpress/[path] [alias]/[bucket]/[path]
 
-### Migrate an existing /wordpress/wp-content/uploads folder to local bucket
-
-	./scripts/mc mirror uploads minio/wordpress/uploads
-
-##### Example
-
 Mirroring an entire remote bucket localy
 
 	./scripts/mc mirror remote_alias/mybucket/ minio/wordpress/
-
 
 Mirroring only a specific folder from remote to local
 
@@ -153,6 +146,11 @@ Mirroring the local bucket to remote
 Mirroring only a specific folder from local to remote
 
 	./scripts/mc mirror minio/wordpress/uploads/2021 remote_alias/mybucket/uploads/2021
+
+
+### Migrate an existing /wordpress/wp-content/uploads folder to local bucket
+
+	./scripts/mc mirror uploads minio/wordpress/uploads
 
 
 ## Daily Workflow on Vixns clusters
