@@ -130,6 +130,10 @@ Mirror local to remote
 
 	./script/mc mirror minio/wordpress/[path] [alias]/[bucket]/[path]
 
+### Migrate an existing /wordpress/wp-content/uploads folder to local bucket
+
+	./scripts/mc mirror uploads minio/wordpress/uploads
+
 ##### Example
 
 Mirroring an entire remote bucket localy
