@@ -9,6 +9,7 @@ RUN apt-get update \
 && pecl install pcov \
 && echo "extension=pcov" > /usr/local/etc/php/conf.d/pcov.ini \
 && curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+&& echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory_limit.ini \
 && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
 && chmod 755 /usr/local/bin/wp /usr/local/bin/composer \
 && usermod -u ${UID:-33} www-data \
@@ -18,6 +19,7 @@ COPY config/nginx/nginx.conf /etc/service/nginx/nginx.conf
 COPY config/nginx/nginx-run.sh /etc/service/nginx/run
 COPY proxysql-run.sh /etc/service/proxysql/run
 COPY update.sh /update.sh
+RUN chmod +x /etc/service/proxysql/run /update.sh
 COPY --chown=www-data:www-data wordpress /wordpress
 ENV HOME=/tmp
 USER www-data
