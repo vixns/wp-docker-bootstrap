@@ -159,6 +159,7 @@ HTTP_PORT=8080
 PMA_PORT=8008
 MH_PORT=8025
 MINIO_PORT=9000
+MINIO_CONSOLE_PORT=9001
 DB_PORT=3306
 
 while true
@@ -183,7 +184,13 @@ while true
 do
     nc -tz -w 1 localhost ${MINIO_PORT} 2> /dev/null
     [ "$?" -eq "1" ] && break
-    MINIO_PORT=$(expr ${MINIO_PORT} + 1)
+    MINIO_PORT=$(expr ${MINIO_PORT} + 2)
+done
+while true
+do
+    nc -tz -w 1 localhost ${MINIO_CONSOLE_PORT} 2> /dev/null
+    [ "$?" -eq "1" ] && break
+    MINIO_CONSOLE_PORT=$(expr ${MINIO_CONSOLE_PORT} + 2)
 done
 while true
 do
@@ -233,6 +240,7 @@ echo "SMTP_USER=''" >> .env
 echo "SMTP_PASS=''" >> .env
 echo "MH_PORT=${MH_PORT}" >> .env
 echo "MINIO_PORT=${MINIO_PORT}" >> .env
+echo "MINIO_CONSOLE_PORT=${MINIO_CONSOLE_PORT}" >> .env
 echo "S3_UPLOADS_URL=http://localhost:${MINIO_PORT}" >> .env
 echo "HTTP_PORT=${HTTP_PORT}" >> .env
 echo "SENTRY_DSN=" >> .env
@@ -273,12 +281,13 @@ services:
       - "\${MH_PORT:-8025}:8025"
   minio:
     image: minio/minio
-    command: server /data
+    command: server --console-address :9001 /data
     user: \${UID}
     volumes:
       - ./s3:/data
     ports:
       - "\${MINIO_PORT:-9000}:9000"
+      - "\${MINIO_CONSOLE_PORT:-9001}:9001"
   app:
     depends_on:
       - db
@@ -303,7 +312,7 @@ version: '3'
 services:
   minio:
     image: minio/minio
-    command: server /data
+    command: server --console-address :9001 /data
     user: \${UID}
     volumes:
       - ./s3:/data
@@ -312,6 +321,7 @@ services:
       - proxy
     ports:
       - "9000"
+      - "9001"
     labels:
       - "traefik.frontend.rule=Host:minio-\${HOSTNAME}.\${DOMAIN}"
   app:
@@ -654,7 +664,7 @@ case $WP_LANG in
     echo "Mot de passe: $USER"
     echo
     echo "Mailhog: http://localhost:${MH_PORT}"
-    echo "Minio: http://localhost:${MINIO_PORT}"
+    echo "Minio: http://localhost:${MINIO_CONSOLE_PORT}"
     echo "Utilisateur minio: minioadmin"
     echo "Mot de passe minio: minioadmin"
     echo
@@ -669,7 +679,7 @@ case $WP_LANG in
     echo "Password: $USER"
     echo
     echo "Mailhog: http://localhost:${MH_PORT}"
-    echo "Minio: http://localhost:${MINIO_PORT}"
+    echo "Minio: http://localhost:${MINIO_CONSOLE_PORT}"
     echo "Minio user: minioadmin"
     echo "Minio password: minioadmin"
     echo
