@@ -485,6 +485,10 @@ app -- /usr/local/bin/composer install -q
 
 rm -rf wordpress/wp-content/plugins/s3-uploads/.git wordpress/wp-content/plugins/s3-uploads/.gitignore
 
+echo "Install s3 uploads cache"
+patch -p1 < s3c.diff
+rm s3c.diff
+
 echo "Configure wordpress"
 ./wp core install \
 --title="Wordpress" \
@@ -513,6 +517,7 @@ echo "Create minio bucket"
 
 echo "Activate s3-uploads"
 ./wp plugin activate s3-uploads
+./wp plugin activate s3-uploads-cache
 
 cat > .vixns-ci.yml << EOF
 version: 1

@@ -1,0 +1,1335 @@
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/README.md b/wordpress/wp-content/plugins/s3-uploads-cache/README.md
+new file mode 100644
+index 00000000..bdbc4577
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/README.md
+@@ -0,0 +1,9 @@
++# S3 Uploads Cache
++
++This plugin is a caching extension to [S3 Uploads](https://github.com/humanmade/S3-Uploads) plugin. By default, [S3 Uploads](https://github.com/humanmade/S3-Uploads), registers `s3` stream wrapper that takes care about accessing `s3` based filed for operations such as `filesize`, `file_exists` and others. This allows developer operate on `s3` assets like they were stored locally.
++
++In many cases, [S3 Uploads](https://github.com/humanmade/S3-Uploads) plugin is used to offload images to AWS S3 and data uploaded there is not changing often or at all. In systems with high traffic a continous access to AWS S3 API is not really required and leads to performance degradation (I have observed that sometimes AWS S3 API interaction via [S3 Uploads](https://github.com/humanmade/S3-Uploads) `s3` stream wrapper is about 13%-15% of entire execution time).
++
++AWS S3 StreamWrapper class offers caching support by passing to it a class that implements `\Aws\CachingInterface`. With this support this plugin leverages WordPress object cache to store S3 objects metadata and technically it reduces AWS S3 API interaction to minimum.
++
++This plugin was tested up to: 3.0.0-beta of [S3 Uploads](https://github.com/humanmade/S3-Uploads)
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/composer.json b/wordpress/wp-content/plugins/s3-uploads-cache/composer.json
+new file mode 100644
+index 00000000..369e148c
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/composer.json
+@@ -0,0 +1,19 @@
++{
++    "name": "lukaspawlik/s3-uploads-cache",
++    "description": "Object cache support for S3 Uploads Plugin",
++    "type": "wordpress-plugin",
++    "keywords": [
++        "wordpress"
++    ],
++    "license": "GPL-2.0+",
++    "authors": [
++        {
++            "name": "Lukas Pawlik",
++            "email": "lukasz.pawlik@gmail.com"
++        }
++    ],
++    "minimum-stability": "dev",
++    "autoload": {
++        "classmap": ["src/"]
++    }
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/composer.lock b/wordpress/wp-content/plugins/s3-uploads-cache/composer.lock
+new file mode 100644
+index 00000000..2b94faa0
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/composer.lock
+@@ -0,0 +1,18 @@
++{
++    "_readme": [
++        "This file locks the dependencies of your project to a known state",
++        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
++        "This file is @generated automatically"
++    ],
++    "content-hash": "3a9dc24c301c23403a9ff752c91fa3ad",
++    "packages": [],
++    "packages-dev": [],
++    "aliases": [],
++    "minimum-stability": "dev",
++    "stability-flags": [],
++    "prefer-stable": false,
++    "prefer-lowest": false,
++    "platform": [],
++    "platform-dev": [],
++    "plugin-api-version": "2.1.0"
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/s3-uploads-cache.php b/wordpress/wp-content/plugins/s3-uploads-cache/s3-uploads-cache.php
+new file mode 100644
+index 00000000..104314d2
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/s3-uploads-cache.php
+@@ -0,0 +1,32 @@
++<?php
++/**
++ * Plugin Name: S3 Uploads Cache
++ * Description: Object cache support for S3 Uploads Plugin
++ * Author: <a href="https://github.com/lukaspawlik">Lukasz Pawlik</a>, <a href="https://xwp.co">XWP</a>
++ * Version: 1.0.0
++ * Author URI: https://github.com/lukaspawlik
++ */
++
++if ( file_exists( dirname( __FILE__ ) . '/vendor/autoload.php' ) ) {
++	require 'vendor/autoload.php';
++}
++
++add_action( 'plugins_loaded', 's3_uploads_cache_init', 9999, 0 );
++
++/**
++ * Check whether S3 uploads classes exist and initialize plugin.
++ *
++ * @return void
++ */
++function s3_uploads_cache_init() {
++
++	/**
++	 * This plugin does not support S3 Uploads plugin stream wrapper so bail out.
++	 */
++	if ( defined( 'S3_UPLOADS_USE_LOCAL' ) && S3_UPLOADS_USE_LOCAL ) {
++		return;
++	}
++
++	$s3_uploads_cache = new S3_Uploads_Cache();
++	$s3_uploads_cache->init();
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache-layer.php b/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache-layer.php
+new file mode 100644
+index 00000000..336e0a41
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache-layer.php
+@@ -0,0 +1,54 @@
++<?php
++/**
++ * Class S3_Uploads_Cache_Layer.
++ *
++ * \Aws\CacheIntefrace implementation using WordPress object cache.
++ */
++
++class S3_Uploads_Cache_Layer implements \Aws\CacheInterface, \Countable {
++
++	/**
++	 * Get object from cache.
++	 *
++	 * @param string $key Cache key.
++	 *
++	 * @return mixed|null
++	 */
++	public function get( $key ) {
++		return wp_cache_get( $key, 's3-uploads-cache' );
++	}
++
++	/**
++	 * Set cache value for key.
++	 *
++	 * @param string $key   Cache key.
++	 * @param mixed  $value Cache value.
++	 * @param int    $ttl   Cache TTL.
++	 *
++	 * @return mixed
++	 */
++	public function set( $key, $value, $ttl = 0 ) {
++		wp_cache_set( $key, $value, 's3-uploads-cache', $ttl );
++	}
++
++	/**
++	 * Remove key from cache.
++	 *
++	 * @param string $key Cache key.
++	 *
++	 * @return mixed
++	 */
++	public function remove( $key ) {
++		wp_cache_delete( $key, 's3-uploads-cache' );
++	}
++
++	/**
++	 * Function provided here only for the compatibility with original \Aws\LruArrayCache example.
++	 *
++	 * @return int
++	 */
++	public function count() {
++		return 0;
++	}
++
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache.php b/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache.php
+new file mode 100644
+index 00000000..5fb9add3
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/src/class-s3-uploads-cache.php
+@@ -0,0 +1,29 @@
++<?php
++
++use Aws\S3\StreamWrapper;
++
++/**
++ * Class S3_Uploads_Cache.
++ *
++ * Re-registers caching layer for S3 stream wrapper provided by AWS in AWS\S3\StreamWrapper
++ */
++class S3_Uploads_Cache {
++
++	/**
++	 * Init plugin logic.
++	 *
++	 * @return void
++	 */
++	public function init() {
++		$instance = S3_Uploads\Plugin::get_instance();
++		$cache    = new S3_Uploads_Cache_Layer();
++
++		/**
++		 * Below code comes directly from original S3 Uploads plugin as we need to re-register stream wrapper.
++		 */
++		StreamWrapper::register( $instance->s3(), 's3', $cache );
++		$acl = defined( 'S3_UPLOADS_OBJECT_ACL' ) ? S3_UPLOADS_OBJECT_ACL : 'public-read';
++		stream_context_set_option( stream_context_get_default(), 's3', 'ACL', $acl );
++		stream_context_set_option( stream_context_get_default(), 's3', 'seekable', true );
++	}
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/autoload.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/autoload.php
+new file mode 100644
+index 00000000..4925fc9b
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/autoload.php
+@@ -0,0 +1,7 @@
++<?php
++
++// autoload.php @generated by Composer
++
++require_once __DIR__ . '/composer/autoload_real.php';
++
++return ComposerAutoloaderInita60d73cde29e645bef6f01b93c0f5701::getLoader();
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/ClassLoader.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/ClassLoader.php
+new file mode 100644
+index 00000000..0cd6055d
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/ClassLoader.php
+@@ -0,0 +1,572 @@
++<?php
++
++/*
++ * This file is part of Composer.
++ *
++ * (c) Nils Adermann <naderman@naderman.de>
++ *     Jordi Boggiano <j.boggiano@seld.be>
++ *
++ * For the full copyright and license information, please view the LICENSE
++ * file that was distributed with this source code.
++ */
++
++namespace Composer\Autoload;
++
++/**
++ * ClassLoader implements a PSR-0, PSR-4 and classmap class loader.
++ *
++ *     $loader = new \Composer\Autoload\ClassLoader();
++ *
++ *     // register classes with namespaces
++ *     $loader->add('Symfony\Component', __DIR__.'/component');
++ *     $loader->add('Symfony',           __DIR__.'/framework');
++ *
++ *     // activate the autoloader
++ *     $loader->register();
++ *
++ *     // to enable searching the include path (eg. for PEAR packages)
++ *     $loader->setUseIncludePath(true);
++ *
++ * In this example, if you try to use a class in the Symfony\Component
++ * namespace or one of its children (Symfony\Component\Console for instance),
++ * the autoloader will first look for the class under the component/
++ * directory, and it will then fallback to the framework/ directory if not
++ * found before giving up.
++ *
++ * This class is loosely based on the Symfony UniversalClassLoader.
++ *
++ * @author Fabien Potencier <fabien@symfony.com>
++ * @author Jordi Boggiano <j.boggiano@seld.be>
++ * @see    https://www.php-fig.org/psr/psr-0/
++ * @see    https://www.php-fig.org/psr/psr-4/
++ */
++class ClassLoader
++{
++    /** @var ?string */
++    private $vendorDir;
++
++    // PSR-4
++    /**
++     * @var array[]
++     * @psalm-var array<string, array<string, int>>
++     */
++    private $prefixLengthsPsr4 = array();
++    /**
++     * @var array[]
++     * @psalm-var array<string, array<int, string>>
++     */
++    private $prefixDirsPsr4 = array();
++    /**
++     * @var array[]
++     * @psalm-var array<string, string>
++     */
++    private $fallbackDirsPsr4 = array();
++
++    // PSR-0
++    /**
++     * @var array[]
++     * @psalm-var array<string, array<string, string[]>>
++     */
++    private $prefixesPsr0 = array();
++    /**
++     * @var array[]
++     * @psalm-var array<string, string>
++     */
++    private $fallbackDirsPsr0 = array();
++
++    /** @var bool */
++    private $useIncludePath = false;
++
++    /**
++     * @var string[]
++     * @psalm-var array<string, string>
++     */
++    private $classMap = array();
++
++    /** @var bool */
++    private $classMapAuthoritative = false;
++
++    /**
++     * @var bool[]
++     * @psalm-var array<string, bool>
++     */
++    private $missingClasses = array();
++
++    /** @var ?string */
++    private $apcuPrefix;
++
++    /**
++     * @var self[]
++     */
++    private static $registeredLoaders = array();
++
++    /**
++     * @param ?string $vendorDir
++     */
++    public function __construct($vendorDir = null)
++    {
++        $this->vendorDir = $vendorDir;
++    }
++
++    /**
++     * @return string[]
++     */
++    public function getPrefixes()
++    {
++        if (!empty($this->prefixesPsr0)) {
++            return call_user_func_array('array_merge', array_values($this->prefixesPsr0));
++        }
++
++        return array();
++    }
++
++    /**
++     * @return array[]
++     * @psalm-return array<string, array<int, string>>
++     */
++    public function getPrefixesPsr4()
++    {
++        return $this->prefixDirsPsr4;
++    }
++
++    /**
++     * @return array[]
++     * @psalm-return array<string, string>
++     */
++    public function getFallbackDirs()
++    {
++        return $this->fallbackDirsPsr0;
++    }
++
++    /**
++     * @return array[]
++     * @psalm-return array<string, string>
++     */
++    public function getFallbackDirsPsr4()
++    {
++        return $this->fallbackDirsPsr4;
++    }
++
++    /**
++     * @return string[] Array of classname => path
++     * @psalm-var array<string, string>
++     */
++    public function getClassMap()
++    {
++        return $this->classMap;
++    }
++
++    /**
++     * @param string[] $classMap Class to filename map
++     * @psalm-param array<string, string> $classMap
++     *
++     * @return void
++     */
++    public function addClassMap(array $classMap)
++    {
++        if ($this->classMap) {
++            $this->classMap = array_merge($this->classMap, $classMap);
++        } else {
++            $this->classMap = $classMap;
++        }
++    }
++
++    /**
++     * Registers a set of PSR-0 directories for a given prefix, either
++     * appending or prepending to the ones previously set for this prefix.
++     *
++     * @param string          $prefix  The prefix
++     * @param string[]|string $paths   The PSR-0 root directories
++     * @param bool            $prepend Whether to prepend the directories
++     *
++     * @return void
++     */
++    public function add($prefix, $paths, $prepend = false)
++    {
++        if (!$prefix) {
++            if ($prepend) {
++                $this->fallbackDirsPsr0 = array_merge(
++                    (array) $paths,
++                    $this->fallbackDirsPsr0
++                );
++            } else {
++                $this->fallbackDirsPsr0 = array_merge(
++                    $this->fallbackDirsPsr0,
++                    (array) $paths
++                );
++            }
++
++            return;
++        }
++
++        $first = $prefix[0];
++        if (!isset($this->prefixesPsr0[$first][$prefix])) {
++            $this->prefixesPsr0[$first][$prefix] = (array) $paths;
++
++            return;
++        }
++        if ($prepend) {
++            $this->prefixesPsr0[$first][$prefix] = array_merge(
++                (array) $paths,
++                $this->prefixesPsr0[$first][$prefix]
++            );
++        } else {
++            $this->prefixesPsr0[$first][$prefix] = array_merge(
++                $this->prefixesPsr0[$first][$prefix],
++                (array) $paths
++            );
++        }
++    }
++
++    /**
++     * Registers a set of PSR-4 directories for a given namespace, either
++     * appending or prepending to the ones previously set for this namespace.
++     *
++     * @param string          $prefix  The prefix/namespace, with trailing '\\'
++     * @param string[]|string $paths   The PSR-4 base directories
++     * @param bool            $prepend Whether to prepend the directories
++     *
++     * @throws \InvalidArgumentException
++     *
++     * @return void
++     */
++    public function addPsr4($prefix, $paths, $prepend = false)
++    {
++        if (!$prefix) {
++            // Register directories for the root namespace.
++            if ($prepend) {
++                $this->fallbackDirsPsr4 = array_merge(
++                    (array) $paths,
++                    $this->fallbackDirsPsr4
++                );
++            } else {
++                $this->fallbackDirsPsr4 = array_merge(
++                    $this->fallbackDirsPsr4,
++                    (array) $paths
++                );
++            }
++        } elseif (!isset($this->prefixDirsPsr4[$prefix])) {
++            // Register directories for a new namespace.
++            $length = strlen($prefix);
++            if ('\\' !== $prefix[$length - 1]) {
++                throw new \InvalidArgumentException("A non-empty PSR-4 prefix must end with a namespace separator.");
++            }
++            $this->prefixLengthsPsr4[$prefix[0]][$prefix] = $length;
++            $this->prefixDirsPsr4[$prefix] = (array) $paths;
++        } elseif ($prepend) {
++            // Prepend directories for an already registered namespace.
++            $this->prefixDirsPsr4[$prefix] = array_merge(
++                (array) $paths,
++                $this->prefixDirsPsr4[$prefix]
++            );
++        } else {
++            // Append directories for an already registered namespace.
++            $this->prefixDirsPsr4[$prefix] = array_merge(
++                $this->prefixDirsPsr4[$prefix],
++                (array) $paths
++            );
++        }
++    }
++
++    /**
++     * Registers a set of PSR-0 directories for a given prefix,
++     * replacing any others previously set for this prefix.
++     *
++     * @param string          $prefix The prefix
++     * @param string[]|string $paths  The PSR-0 base directories
++     *
++     * @return void
++     */
++    public function set($prefix, $paths)
++    {
++        if (!$prefix) {
++            $this->fallbackDirsPsr0 = (array) $paths;
++        } else {
++            $this->prefixesPsr0[$prefix[0]][$prefix] = (array) $paths;
++        }
++    }
++
++    /**
++     * Registers a set of PSR-4 directories for a given namespace,
++     * replacing any others previously set for this namespace.
++     *
++     * @param string          $prefix The prefix/namespace, with trailing '\\'
++     * @param string[]|string $paths  The PSR-4 base directories
++     *
++     * @throws \InvalidArgumentException
++     *
++     * @return void
++     */
++    public function setPsr4($prefix, $paths)
++    {
++        if (!$prefix) {
++            $this->fallbackDirsPsr4 = (array) $paths;
++        } else {
++            $length = strlen($prefix);
++            if ('\\' !== $prefix[$length - 1]) {
++                throw new \InvalidArgumentException("A non-empty PSR-4 prefix must end with a namespace separator.");
++            }
++            $this->prefixLengthsPsr4[$prefix[0]][$prefix] = $length;
++            $this->prefixDirsPsr4[$prefix] = (array) $paths;
++        }
++    }
++
++    /**
++     * Turns on searching the include path for class files.
++     *
++     * @param bool $useIncludePath
++     *
++     * @return void
++     */
++    public function setUseIncludePath($useIncludePath)
++    {
++        $this->useIncludePath = $useIncludePath;
++    }
++
++    /**
++     * Can be used to check if the autoloader uses the include path to check
++     * for classes.
++     *
++     * @return bool
++     */
++    public function getUseIncludePath()
++    {
++        return $this->useIncludePath;
++    }
++
++    /**
++     * Turns off searching the prefix and fallback directories for classes
++     * that have not been registered with the class map.
++     *
++     * @param bool $classMapAuthoritative
++     *
++     * @return void
++     */
++    public function setClassMapAuthoritative($classMapAuthoritative)
++    {
++        $this->classMapAuthoritative = $classMapAuthoritative;
++    }
++
++    /**
++     * Should class lookup fail if not found in the current class map?
++     *
++     * @return bool
++     */
++    public function isClassMapAuthoritative()
++    {
++        return $this->classMapAuthoritative;
++    }
++
++    /**
++     * APCu prefix to use to cache found/not-found classes, if the extension is enabled.
++     *
++     * @param string|null $apcuPrefix
++     *
++     * @return void
++     */
++    public function setApcuPrefix($apcuPrefix)
++    {
++        $this->apcuPrefix = function_exists('apcu_fetch') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN) ? $apcuPrefix : null;
++    }
++
++    /**
++     * The APCu prefix in use, or null if APCu caching is not enabled.
++     *
++     * @return string|null
++     */
++    public function getApcuPrefix()
++    {
++        return $this->apcuPrefix;
++    }
++
++    /**
++     * Registers this instance as an autoloader.
++     *
++     * @param bool $prepend Whether to prepend the autoloader or not
++     *
++     * @return void
++     */
++    public function register($prepend = false)
++    {
++        spl_autoload_register(array($this, 'loadClass'), true, $prepend);
++
++        if (null === $this->vendorDir) {
++            return;
++        }
++
++        if ($prepend) {
++            self::$registeredLoaders = array($this->vendorDir => $this) + self::$registeredLoaders;
++        } else {
++            unset(self::$registeredLoaders[$this->vendorDir]);
++            self::$registeredLoaders[$this->vendorDir] = $this;
++        }
++    }
++
++    /**
++     * Unregisters this instance as an autoloader.
++     *
++     * @return void
++     */
++    public function unregister()
++    {
++        spl_autoload_unregister(array($this, 'loadClass'));
++
++        if (null !== $this->vendorDir) {
++            unset(self::$registeredLoaders[$this->vendorDir]);
++        }
++    }
++
++    /**
++     * Loads the given class or interface.
++     *
++     * @param  string    $class The name of the class
++     * @return true|null True if loaded, null otherwise
++     */
++    public function loadClass($class)
++    {
++        if ($file = $this->findFile($class)) {
++            includeFile($file);
++
++            return true;
++        }
++
++        return null;
++    }
++
++    /**
++     * Finds the path to the file where the class is defined.
++     *
++     * @param string $class The name of the class
++     *
++     * @return string|false The path if found, false otherwise
++     */
++    public function findFile($class)
++    {
++        // class map lookup
++        if (isset($this->classMap[$class])) {
++            return $this->classMap[$class];
++        }
++        if ($this->classMapAuthoritative || isset($this->missingClasses[$class])) {
++            return false;
++        }
++        if (null !== $this->apcuPrefix) {
++            $file = apcu_fetch($this->apcuPrefix.$class, $hit);
++            if ($hit) {
++                return $file;
++            }
++        }
++
++        $file = $this->findFileWithExtension($class, '.php');
++
++        // Search for Hack files if we are running on HHVM
++        if (false === $file && defined('HHVM_VERSION')) {
++            $file = $this->findFileWithExtension($class, '.hh');
++        }
++
++        if (null !== $this->apcuPrefix) {
++            apcu_add($this->apcuPrefix.$class, $file);
++        }
++
++        if (false === $file) {
++            // Remember that this class does not exist.
++            $this->missingClasses[$class] = true;
++        }
++
++        return $file;
++    }
++
++    /**
++     * Returns the currently registered loaders indexed by their corresponding vendor directories.
++     *
++     * @return self[]
++     */
++    public static function getRegisteredLoaders()
++    {
++        return self::$registeredLoaders;
++    }
++
++    /**
++     * @param  string       $class
++     * @param  string       $ext
++     * @return string|false
++     */
++    private function findFileWithExtension($class, $ext)
++    {
++        // PSR-4 lookup
++        $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . $ext;
++
++        $first = $class[0];
++        if (isset($this->prefixLengthsPsr4[$first])) {
++            $subPath = $class;
++            while (false !== $lastPos = strrpos($subPath, '\\')) {
++                $subPath = substr($subPath, 0, $lastPos);
++                $search = $subPath . '\\';
++                if (isset($this->prefixDirsPsr4[$search])) {
++                    $pathEnd = DIRECTORY_SEPARATOR . substr($logicalPathPsr4, $lastPos + 1);
++                    foreach ($this->prefixDirsPsr4[$search] as $dir) {
++                        if (file_exists($file = $dir . $pathEnd)) {
++                            return $file;
++                        }
++                    }
++                }
++            }
++        }
++
++        // PSR-4 fallback dirs
++        foreach ($this->fallbackDirsPsr4 as $dir) {
++            if (file_exists($file = $dir . DIRECTORY_SEPARATOR . $logicalPathPsr4)) {
++                return $file;
++            }
++        }
++
++        // PSR-0 lookup
++        if (false !== $pos = strrpos($class, '\\')) {
++            // namespaced class name
++            $logicalPathPsr0 = substr($logicalPathPsr4, 0, $pos + 1)
++                . strtr(substr($logicalPathPsr4, $pos + 1), '_', DIRECTORY_SEPARATOR);
++        } else {
++            // PEAR-like class name
++            $logicalPathPsr0 = strtr($class, '_', DIRECTORY_SEPARATOR) . $ext;
++        }
++
++        if (isset($this->prefixesPsr0[$first])) {
++            foreach ($this->prefixesPsr0[$first] as $prefix => $dirs) {
++                if (0 === strpos($class, $prefix)) {
++                    foreach ($dirs as $dir) {
++                        if (file_exists($file = $dir . DIRECTORY_SEPARATOR . $logicalPathPsr0)) {
++                            return $file;
++                        }
++                    }
++                }
++            }
++        }
++
++        // PSR-0 fallback dirs
++        foreach ($this->fallbackDirsPsr0 as $dir) {
++            if (file_exists($file = $dir . DIRECTORY_SEPARATOR . $logicalPathPsr0)) {
++                return $file;
++            }
++        }
++
++        // PSR-0 include paths.
++        if ($this->useIncludePath && $file = stream_resolve_include_path($logicalPathPsr0)) {
++            return $file;
++        }
++
++        return false;
++    }
++}
++
++/**
++ * Scope isolated include.
++ *
++ * Prevents access to $this/self from included files.
++ *
++ * @param  string $file
++ * @return void
++ * @private
++ */
++function includeFile($file)
++{
++    include $file;
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/InstalledVersions.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/InstalledVersions.php
+new file mode 100644
+index 00000000..7c5502ca
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/InstalledVersions.php
+@@ -0,0 +1,337 @@
++<?php
++
++/*
++ * This file is part of Composer.
++ *
++ * (c) Nils Adermann <naderman@naderman.de>
++ *     Jordi Boggiano <j.boggiano@seld.be>
++ *
++ * For the full copyright and license information, please view the LICENSE
++ * file that was distributed with this source code.
++ */
++
++namespace Composer;
++
++use Composer\Autoload\ClassLoader;
++use Composer\Semver\VersionParser;
++
++/**
++ * This class is copied in every Composer installed project and available to all
++ *
++ * See also https://getcomposer.org/doc/07-runtime.md#installed-versions
++ *
++ * To require its presence, you can require `composer-runtime-api ^2.0`
++ */
++class InstalledVersions
++{
++    private static $installed;
++    private static $canGetVendors;
++    private static $installedByVendor = array();
++
++    /**
++     * Returns a list of all package names which are present, either by being installed, replaced or provided
++     *
++     * @return string[]
++     * @psalm-return list<string>
++     */
++    public static function getInstalledPackages()
++    {
++        $packages = array();
++        foreach (self::getInstalled() as $installed) {
++            $packages[] = array_keys($installed['versions']);
++        }
++
++        if (1 === \count($packages)) {
++            return $packages[0];
++        }
++
++        return array_keys(array_flip(\call_user_func_array('array_merge', $packages)));
++    }
++
++    /**
++     * Returns a list of all package names with a specific type e.g. 'library'
++     *
++     * @param  string   $type
++     * @return string[]
++     * @psalm-return list<string>
++     */
++    public static function getInstalledPackagesByType($type)
++    {
++        $packagesByType = array();
++
++        foreach (self::getInstalled() as $installed) {
++            foreach ($installed['versions'] as $name => $package) {
++                if (isset($package['type']) && $package['type'] === $type) {
++                    $packagesByType[] = $name;
++                }
++            }
++        }
++
++        return $packagesByType;
++    }
++
++    /**
++     * Checks whether the given package is installed
++     *
++     * This also returns true if the package name is provided or replaced by another package
++     *
++     * @param  string $packageName
++     * @param  bool   $includeDevRequirements
++     * @return bool
++     */
++    public static function isInstalled($packageName, $includeDevRequirements = true)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (isset($installed['versions'][$packageName])) {
++                return $includeDevRequirements || empty($installed['versions'][$packageName]['dev_requirement']);
++            }
++        }
++
++        return false;
++    }
++
++    /**
++     * Checks whether the given package satisfies a version constraint
++     *
++     * e.g. If you want to know whether version 2.3+ of package foo/bar is installed, you would call:
++     *
++     *   Composer\InstalledVersions::satisfies(new VersionParser, 'foo/bar', '^2.3')
++     *
++     * @param  VersionParser $parser      Install composer/semver to have access to this class and functionality
++     * @param  string        $packageName
++     * @param  string|null   $constraint  A version constraint to check for, if you pass one you have to make sure composer/semver is required by your package
++     * @return bool
++     */
++    public static function satisfies(VersionParser $parser, $packageName, $constraint)
++    {
++        $constraint = $parser->parseConstraints($constraint);
++        $provided = $parser->parseConstraints(self::getVersionRanges($packageName));
++
++        return $provided->matches($constraint);
++    }
++
++    /**
++     * Returns a version constraint representing all the range(s) which are installed for a given package
++     *
++     * It is easier to use this via isInstalled() with the $constraint argument if you need to check
++     * whether a given version of a package is installed, and not just whether it exists
++     *
++     * @param  string $packageName
++     * @return string Version constraint usable with composer/semver
++     */
++    public static function getVersionRanges($packageName)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (!isset($installed['versions'][$packageName])) {
++                continue;
++            }
++
++            $ranges = array();
++            if (isset($installed['versions'][$packageName]['pretty_version'])) {
++                $ranges[] = $installed['versions'][$packageName]['pretty_version'];
++            }
++            if (array_key_exists('aliases', $installed['versions'][$packageName])) {
++                $ranges = array_merge($ranges, $installed['versions'][$packageName]['aliases']);
++            }
++            if (array_key_exists('replaced', $installed['versions'][$packageName])) {
++                $ranges = array_merge($ranges, $installed['versions'][$packageName]['replaced']);
++            }
++            if (array_key_exists('provided', $installed['versions'][$packageName])) {
++                $ranges = array_merge($ranges, $installed['versions'][$packageName]['provided']);
++            }
++
++            return implode(' || ', $ranges);
++        }
++
++        throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
++    }
++
++    /**
++     * @param  string      $packageName
++     * @return string|null If the package is being replaced or provided but is not really installed, null will be returned as version, use satisfies or getVersionRanges if you need to know if a given version is present
++     */
++    public static function getVersion($packageName)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (!isset($installed['versions'][$packageName])) {
++                continue;
++            }
++
++            if (!isset($installed['versions'][$packageName]['version'])) {
++                return null;
++            }
++
++            return $installed['versions'][$packageName]['version'];
++        }
++
++        throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
++    }
++
++    /**
++     * @param  string      $packageName
++     * @return string|null If the package is being replaced or provided but is not really installed, null will be returned as version, use satisfies or getVersionRanges if you need to know if a given version is present
++     */
++    public static function getPrettyVersion($packageName)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (!isset($installed['versions'][$packageName])) {
++                continue;
++            }
++
++            if (!isset($installed['versions'][$packageName]['pretty_version'])) {
++                return null;
++            }
++
++            return $installed['versions'][$packageName]['pretty_version'];
++        }
++
++        throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
++    }
++
++    /**
++     * @param  string      $packageName
++     * @return string|null If the package is being replaced or provided but is not really installed, null will be returned as reference
++     */
++    public static function getReference($packageName)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (!isset($installed['versions'][$packageName])) {
++                continue;
++            }
++
++            if (!isset($installed['versions'][$packageName]['reference'])) {
++                return null;
++            }
++
++            return $installed['versions'][$packageName]['reference'];
++        }
++
++        throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
++    }
++
++    /**
++     * @param  string      $packageName
++     * @return string|null If the package is being replaced or provided but is not really installed, null will be returned as install path. Packages of type metapackages also have a null install path.
++     */
++    public static function getInstallPath($packageName)
++    {
++        foreach (self::getInstalled() as $installed) {
++            if (!isset($installed['versions'][$packageName])) {
++                continue;
++            }
++
++            return isset($installed['versions'][$packageName]['install_path']) ? $installed['versions'][$packageName]['install_path'] : null;
++        }
++
++        throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
++    }
++
++    /**
++     * @return array
++     * @psalm-return array{name: string, version: string, reference: string, pretty_version: string, aliases: string[], dev: bool, install_path: string, type: string}
++     */
++    public static function getRootPackage()
++    {
++        $installed = self::getInstalled();
++
++        return $installed[0]['root'];
++    }
++
++    /**
++     * Returns the raw installed.php data for custom implementations
++     *
++     * @deprecated Use getAllRawData() instead which returns all datasets for all autoloaders present in the process. getRawData only returns the first dataset loaded, which may not be what you expect.
++     * @return array[]
++     * @psalm-return array{root: array{name: string, version: string, reference: string, pretty_version: string, aliases: string[], dev: bool, install_path: string, type: string}, versions: array<string, array{dev_requirement: bool, pretty_version?: string, version?: string, aliases?: string[], reference?: string, replaced?: string[], provided?: string[], install_path?: string, type?: string}>}
++     */
++    public static function getRawData()
++    {
++        @trigger_error('getRawData only returns the first dataset loaded, which may not be what you expect. Use getAllRawData() instead which returns all datasets for all autoloaders present in the process.', E_USER_DEPRECATED);
++
++        if (null === self::$installed) {
++            // only require the installed.php file if this file is loaded from its dumped location,
++            // and not from its source location in the composer/composer package, see https://github.com/composer/composer/issues/9937
++            if (substr(__DIR__, -8, 1) !== 'C') {
++                self::$installed = include __DIR__ . '/installed.php';
++            } else {
++                self::$installed = array();
++            }
++        }
++
++        return self::$installed;
++    }
++
++    /**
++     * Returns the raw data of all installed.php which are currently loaded for custom implementations
++     *
++     * @return array[]
++     * @psalm-return list<array{root: array{name: string, version: string, reference: string, pretty_version: string, aliases: string[], dev: bool, install_path: string, type: string}, versions: array<string, array{dev_requirement: bool, pretty_version?: string, version?: string, aliases?: string[], reference?: string, replaced?: string[], provided?: string[], install_path?: string, type?: string}>}>
++     */
++    public static function getAllRawData()
++    {
++        return self::getInstalled();
++    }
++
++    /**
++     * Lets you reload the static array from another file
++     *
++     * This is only useful for complex integrations in which a project needs to use
++     * this class but then also needs to execute another project's autoloader in process,
++     * and wants to ensure both projects have access to their version of installed.php.
++     *
++     * A typical case would be PHPUnit, where it would need to make sure it reads all
++     * the data it needs from this class, then call reload() with
++     * `require $CWD/vendor/composer/installed.php` (or similar) as input to make sure
++     * the project in which it runs can then also use this class safely, without
++     * interference between PHPUnit's dependencies and the project's dependencies.
++     *
++     * @param  array[] $data A vendor/composer/installed.php data set
++     * @return void
++     *
++     * @psalm-param array{root: array{name: string, version: string, reference: string, pretty_version: string, aliases: string[], dev: bool, install_path: string, type: string}, versions: array<string, array{dev_requirement: bool, pretty_version?: string, version?: string, aliases?: string[], reference?: string, replaced?: string[], provided?: string[], install_path?: string, type?: string}>} $data
++     */
++    public static function reload($data)
++    {
++        self::$installed = $data;
++        self::$installedByVendor = array();
++    }
++
++    /**
++     * @return array[]
++     * @psalm-return list<array{root: array{name: string, version: string, reference: string, pretty_version: string, aliases: string[], dev: bool, install_path: string, type: string}, versions: array<string, array{dev_requirement: bool, pretty_version?: string, version?: string, aliases?: string[], reference?: string, replaced?: string[], provided?: string[], install_path?: string, type?: string}>}>
++     */
++    private static function getInstalled()
++    {
++        if (null === self::$canGetVendors) {
++            self::$canGetVendors = method_exists('Composer\Autoload\ClassLoader', 'getRegisteredLoaders');
++        }
++
++        $installed = array();
++
++        if (self::$canGetVendors) {
++            foreach (ClassLoader::getRegisteredLoaders() as $vendorDir => $loader) {
++                if (isset(self::$installedByVendor[$vendorDir])) {
++                    $installed[] = self::$installedByVendor[$vendorDir];
++                } elseif (is_file($vendorDir.'/composer/installed.php')) {
++                    $installed[] = self::$installedByVendor[$vendorDir] = require $vendorDir.'/composer/installed.php';
++                    if (null === self::$installed && strtr($vendorDir.'/composer', '\\', '/') === strtr(__DIR__, '\\', '/')) {
++                        self::$installed = $installed[count($installed) - 1];
++                    }
++                }
++            }
++        }
++
++        if (null === self::$installed) {
++            // only require the installed.php file if this file is loaded from its dumped location,
++            // and not from its source location in the composer/composer package, see https://github.com/composer/composer/issues/9937
++            if (substr(__DIR__, -8, 1) !== 'C') {
++                self::$installed = require __DIR__ . '/installed.php';
++            } else {
++                self::$installed = array();
++            }
++        }
++        $installed[] = self::$installed;
++
++        return $installed;
++    }
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/LICENSE b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/LICENSE
+new file mode 100644
+index 00000000..f27399a0
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/LICENSE
+@@ -0,0 +1,21 @@
++
++Copyright (c) Nils Adermann, Jordi Boggiano
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is furnished
++to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++THE SOFTWARE.
++
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_classmap.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_classmap.php
+new file mode 100644
+index 00000000..ddaaf8bd
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_classmap.php
+@@ -0,0 +1,12 @@
++<?php
++
++// autoload_classmap.php @generated by Composer
++
++$vendorDir = dirname(dirname(__FILE__));
++$baseDir = dirname($vendorDir);
++
++return array(
++    'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
++    'S3_Uploads_Cache' => $baseDir . '/src/class-s3-uploads-cache.php',
++    'S3_Uploads_Cache_Layer' => $baseDir . '/src/class-s3-uploads-cache-layer.php',
++);
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_namespaces.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_namespaces.php
+new file mode 100644
+index 00000000..b7fc0125
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_namespaces.php
+@@ -0,0 +1,9 @@
++<?php
++
++// autoload_namespaces.php @generated by Composer
++
++$vendorDir = dirname(dirname(__FILE__));
++$baseDir = dirname($vendorDir);
++
++return array(
++);
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_psr4.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_psr4.php
+new file mode 100644
+index 00000000..b265c64a
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_psr4.php
+@@ -0,0 +1,9 @@
++<?php
++
++// autoload_psr4.php @generated by Composer
++
++$vendorDir = dirname(dirname(__FILE__));
++$baseDir = dirname($vendorDir);
++
++return array(
++);
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_real.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_real.php
+new file mode 100644
+index 00000000..e69d7437
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_real.php
+@@ -0,0 +1,55 @@
++<?php
++
++// autoload_real.php @generated by Composer
++
++class ComposerAutoloaderInita60d73cde29e645bef6f01b93c0f5701
++{
++    private static $loader;
++
++    public static function loadClassLoader($class)
++    {
++        if ('Composer\Autoload\ClassLoader' === $class) {
++            require __DIR__ . '/ClassLoader.php';
++        }
++    }
++
++    /**
++     * @return \Composer\Autoload\ClassLoader
++     */
++    public static function getLoader()
++    {
++        if (null !== self::$loader) {
++            return self::$loader;
++        }
++
++        spl_autoload_register(array('ComposerAutoloaderInita60d73cde29e645bef6f01b93c0f5701', 'loadClassLoader'), true, true);
++        self::$loader = $loader = new \Composer\Autoload\ClassLoader(\dirname(\dirname(__FILE__)));
++        spl_autoload_unregister(array('ComposerAutoloaderInita60d73cde29e645bef6f01b93c0f5701', 'loadClassLoader'));
++
++        $useStaticLoader = PHP_VERSION_ID >= 50600 && !defined('HHVM_VERSION') && (!function_exists('zend_loader_file_encoded') || !zend_loader_file_encoded());
++        if ($useStaticLoader) {
++            require __DIR__ . '/autoload_static.php';
++
++            call_user_func(\Composer\Autoload\ComposerStaticInita60d73cde29e645bef6f01b93c0f5701::getInitializer($loader));
++        } else {
++            $map = require __DIR__ . '/autoload_namespaces.php';
++            foreach ($map as $namespace => $path) {
++                $loader->set($namespace, $path);
++            }
++
++            $map = require __DIR__ . '/autoload_psr4.php';
++            foreach ($map as $namespace => $path) {
++                $loader->setPsr4($namespace, $path);
++            }
++
++            $classMap = require __DIR__ . '/autoload_classmap.php';
++            if ($classMap) {
++                $loader->addClassMap($classMap);
++            }
++        }
++
++        $loader->register(true);
++
++        return $loader;
++    }
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_static.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_static.php
+new file mode 100644
+index 00000000..49e30f11
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/autoload_static.php
+@@ -0,0 +1,22 @@
++<?php
++
++// autoload_static.php @generated by Composer
++
++namespace Composer\Autoload;
++
++class ComposerStaticInita60d73cde29e645bef6f01b93c0f5701
++{
++    public static $classMap = array (
++        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
++        'S3_Uploads_Cache' => __DIR__ . '/../..' . '/src/class-s3-uploads-cache.php',
++        'S3_Uploads_Cache_Layer' => __DIR__ . '/../..' . '/src/class-s3-uploads-cache-layer.php',
++    );
++
++    public static function getInitializer(ClassLoader $loader)
++    {
++        return \Closure::bind(function () use ($loader) {
++            $loader->classMap = ComposerStaticInita60d73cde29e645bef6f01b93c0f5701::$classMap;
++
++        }, null, ClassLoader::class);
++    }
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.json b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.json
+new file mode 100644
+index 00000000..87fda747
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.json
+@@ -0,0 +1,5 @@
++{
++    "packages": [],
++    "dev": true,
++    "dev-package-names": []
++}
+diff --git a/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.php b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.php
+new file mode 100644
+index 00000000..c52cc2bd
+--- /dev/null
++++ b/wordpress/wp-content/plugins/s3-uploads-cache/vendor/composer/installed.php
+@@ -0,0 +1,23 @@
++<?php return array(
++    'root' => array(
++        'pretty_version' => '1.0.0+no-version-set',
++        'version' => '1.0.0.0',
++        'type' => 'wordpress-plugin',
++        'install_path' => __DIR__ . '/../../',
++        'aliases' => array(),
++        'reference' => NULL,
++        'name' => 'lukaspawlik/s3-uploads-cache',
++        'dev' => true,
++    ),
++    'versions' => array(
++        'lukaspawlik/s3-uploads-cache' => array(
++            'pretty_version' => '1.0.0+no-version-set',
++            'version' => '1.0.0.0',
++            'type' => 'wordpress-plugin',
++            'install_path' => __DIR__ . '/../../',
++            'aliases' => array(),
++            'reference' => NULL,
++            'dev_requirement' => false,
++        ),
++    ),
++);
