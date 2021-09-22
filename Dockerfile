@@ -13,7 +13,11 @@ RUN apt-get update \
 && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
 && chmod 755 /usr/local/bin/wp /usr/local/bin/composer \
 && usermod -u ${UID:-33} www-data \
-&& chown -R www-data:www-data /etc/service /var/log/nginx /var/lib/nginx /etc/nginx/conf.d
+&& chown -R www-data:www-data /etc/service /var/log/nginx /var/lib/nginx /etc/nginx/conf.d \
+&& echo "mysql.default_socket = /tmp/mysqld.sock" >  /usr/local/etc/php/conf.d/mysql.ini \
+&& echo "mysqli.default_socket = /tmp/mysqld.sock" > /usr/local/etc/php/conf.d/mysqli.ini\
+&& echo "pdo_mysql.default_socket = /tmp/mysqld.sock" > /usr/local/etc/php/conf.d/pdo_mysql.ini
+
 COPY config/php /usr/local/etc/php-fpm.d
 COPY config/nginx/nginx.conf /etc/service/nginx/nginx.conf
 COPY config/nginx/nginx-run.sh /etc/service/nginx/run
