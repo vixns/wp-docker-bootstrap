@@ -452,9 +452,9 @@ mkdir -p /tmp/proxysql
 
 cp /etc/proxysql/proxysql.cnf.tpl /etc/service/proxysql/proxysql.cnf
 
-a=\$(ping -c 1 \$MYSQL1 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
-b=\$(ping -c 1 \$MYSQL2 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
-c=\$(ping -c 1 \$MYSQL3 | grep time= | awk '{print \$8}'| awk -F'=' '{print \$2 * 1000}')
+a=\$(nping -c 1 --tcp-connect -p 3306 \$MYSQL1 | grep rtt | awk '{print \$3}' | tr -d 'ms' | awk -F'=' '{print \$1 * 1000}')
+b=\$(nping -c 1 --tcp-connect -p 3306 \$MYSQL2 | grep rtt | awk '{print \$3}' | tr -d 'ms' | awk -F'=' '{print \$1 * 1000}')
+c=\$(nping -c 1 --tcp-connect -p 3306 \$MYSQL3 | grep rtt | awk '{print \$3}' | tr -d 'ms' | awk -F'=' '{print \$1 * 1000}')
 
 if [ \$a -lt \$b -a \$a -lt \$c ]
 then

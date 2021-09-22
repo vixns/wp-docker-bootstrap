@@ -3,7 +3,7 @@ ARG UID=33
 WORKDIR /wordpress
 USER root
 RUN apt-get update \
-&& apt-get install --no-install-recommends -y default-libmysqlclient-dev default-mysql-client less unzip git iputils-ping \
+&& apt-get install --no-install-recommends -y default-libmysqlclient-dev default-mysql-client less unzip git nmap \
 && rm -rf /var/lib/apt/lists/* \
 && docker-php-ext-install mysqli pdo_mysql \
 && pecl install pcov \
